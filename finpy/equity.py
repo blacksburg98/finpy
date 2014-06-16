@@ -179,9 +179,9 @@ class Equity(pd.DataFrame, FinCommon):
         ratio = 1.0 - self.up_ratio(date, days)
         return ratio
 
-    def RSI(self):
-        """
-        Relative Strength Index
-        http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:relative_strength_index_rsi
-        """
-        retrun False
+#    def RSI(self):
+#        """
+#        Relative Strength Index
+#        http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:relative_strength_index_rsi
+#        """
+#        retrun False
