@@ -1,0 +1,12 @@
+0.1.003 
+----------------
+Implement the following functions for both Equity and Portfolio.
+sharpe_ratio
+info_ratio
+appraisal_ratio
+excess_risk
+excess_return
+active_risk
+active_return
+residual_risk
+residual_return
