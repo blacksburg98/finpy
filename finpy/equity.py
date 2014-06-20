@@ -34,6 +34,9 @@ class Equity(pd.DataFrame, FinCommon):
         self['sell'] = 0.0
 
     def buy(self, date, shares, price, ldt_timestamps):
+        """
+        Buy stocks.
+        """
         self.fillna_shares(date, ldt_timestamps)
         self['buy'][date] = shares
         self['shares'][date] += shares
@@ -179,6 +182,19 @@ class Equity(pd.DataFrame, FinCommon):
         ratio = 1.0 - self.up_ratio(date, days)
         return ratio
 
+    def rolling_normalized_stdev(self, tick, window=200):
+        """
+        Return the rolling standard deviation of normalized price
+        """
+        ldt_timestamps = self.ldt_timestamps()
+        pre_timestamps = ut.pre_timestamps(ldt_timestamps, window)
+        # ldf_data has the data prior to our current interest.
+        # This is used to calculate moving average for the first window.
+        ldf_data = ut.get_tickdata([tick], pre_timestamps)
+        merged_data = pd.concat([ldf_data[tick]['close'], self['close']])
+        merged_data = merged_data['close']/merged_data['close'].ix[0]
+        sigma = pd.rolling_std(merged_data, window=window)
+        return sigma[self.index]
 #    def RSI(self):
 #        """
 #        Relative Strength Index
