@@ -55,12 +55,13 @@ class Equity(pd.DataFrame, FinCommon):
         """
         Return the return of each day, a list.
         """
-        if data == None:
+        if type(data) == type(None):
             daily_close = self['close']
+            ldt_timestamps = self.ldt_timestamps()
         else:
             daily_close = data
+            ldt_timestamps = data.index
         daily_rtn = []
-        ldt_timestamps = self.ldt_timestamps()
         for date in range(len(ldt_timestamps)):
             if date == 0:
                 daily_rtn.append(0)
@@ -196,7 +197,8 @@ class Equity(pd.DataFrame, FinCommon):
         # This is used to calculate moving average for the first window.
         ldf_data = ut.get_tickdata([tick], pre_timestamps)
         merged_data = pd.concat([ldf_data[tick]['close'], self['close']])
-        merged_daily_rtn = self.daily_return(merged_data)
+        all_timestamps = pre_timestamps + ldt_timestamps
+        merged_daily_rtn = pd.Series(self.daily_return(merged_data), index=all_timestamps) 
         sigma = pd.rolling_std(merged_daily_rtn, window=window)
         return sigma[self.index]
 #    def RSI(self):
