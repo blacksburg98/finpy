@@ -35,6 +35,9 @@ def get_data(data_path, ls_symbols):
         try:
             month = dt_start.month - 1
             params= urllib.urlencode ({'a':month, 'b':dt_start.day, 'c':dt_start.year, 'd':_now.month, 'e':_now.day, 'f':_now.year, 's': symbol})
+            # Fix for ubuntu. For some reasons, ubuntu put %0D at the end
+            if params[-3:] == "%0D":
+                params = params[:-3]
             url = "http://ichart.finance.yahoo.com/table.csv?%s" % params
             url_get= urllib2.urlopen(url)
             
