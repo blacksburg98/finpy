@@ -187,7 +187,7 @@ class Equity(pd.DataFrame, FinCommon):
         ratio = 1.0 - self.up_ratio(date, days)
         return ratio
 
-    def rolling_normalized_stdev(self, tick, window=200):
+    def rolling_normalized_stdev(self, tick, window=50):
         """
         Return the rolling standard deviation of normalized price
         """
