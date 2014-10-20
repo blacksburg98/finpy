@@ -150,4 +150,11 @@ class TestPortfolioFunctions(unittest.TestCase):
         self.assertEqual(round(self.pf.equities['_AAPL'].appraisal_ratio(self.benchmark), 8), 0.02347507)
 
 if __name__ == '__main__':
+    if 'FINPYDATA' in os.environ:
+        tmp_finpydata = os.environ['FINPYDATA']
+    os.environ['FINPYDATA'] = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data')) 
     unittest.main()
+    if tmp_finpydata in locals():
+        os.environ['FINPYDATA'] = tmp_finpydata
+    else:
+        os.environ.pop('FINPYDATA', None)

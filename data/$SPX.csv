@@ -1,0 +1,113 @@
+<html><head><title>UC Davis Login</title>
+
+
+   
+   <link href="distauth.css" rel="stylesheet" type="text/css">
+   <meta http-equiv="pragma" content="no-cache"></head><body>
+   <script>
+   <!--
+   function createCookie(name,value,days)
+   {
+	if (days)
+	{
+	  var date = new Date();
+	  date.setTime(date.getTime()+(days*24*60*60*1000));
+	  var expires = "; expires="+date.toGMTString();
+	}
+	else var expires = "";
+	document.cookie = name+"="+value+expires+"; path=/";
+   }
+
+   var q = window.location.search;
+   var errmsg = null;
+   if (q && q.length > 1) {
+      q = q.substring(0).split(/[=&]/);
+      for (var i = 0; i < q.length - 1; i += 2) {
+         if (q[i] == "errmsg") {
+            errmsg = unescape(q[i+1]);
+            break;
+         }
+         if (q[i] == "url") {
+            createCookie('url',q[i+1],0)
+         }
+      }
+      if (errmsg && errmsg.length > 0) {
+         errmsg = "<div id='errorbox'>\n" + errmsg + "\n</div>\n";
+         document.write(errmsg);
+      }
+   }
+// -->
+  </script>
+<div class="da-body">
+<img src="ucdavis_logo.gif" alt="UC Davis Logo">
+<br><br>
+<table cellspacing="10" width="480">
+<tbody><tr>
+  <td colspan="2" height="30">
+    <span class="big-title">Secure Login<img src="bluebar1.gif" alt="---" height="3" width="100%"></span>
+  </td>
+</tr>
+   <tr>
+
+      <td colspan="2">
+<div class="black-small">
+For access, type your UC Davis LoginID and Kerberos password below.
+
+</div>
+      </td>
+   </tr>
+   
+   <form method="post" action="/auth/index.html/u">
+
+   <tr valign="middle">
+      <td align="center" bgcolor="#eeeeee">
+         <table cellpadding="4">
+            <tbody><tr>
+               <td>
+               
+                  <label for="loginid">LoginID:</label>
+               </td>
+
+               <td>
+                  <input id="loginid" name="user" value="" accesskey="u" size="25" type="text">
+               </td>
+            </tr>
+            <tr valign="middle">
+               <td>
+                  <label for="password">Password:</label>
+               </td>
+               <td>
+                  <input id="password" name="password" value="" accesskey="p" size="25" maxlength="50" type="password">
+               </td>
+            </tr>
+            <tr valign="middle">
+               <td align="center">
+                  <input value="Login" type="submit">
+               </td><td align="center">
+
+                  <a href="http://computingaccounts.ucdavis.edu/how.html" target="_blank">Login help</a>
+               </td>
+            </tr>
+         </tbody></table>
+      </td>
+   </tr></form>
+   <tr>
+      <td colspan="2">
+
+         <span class="black-small">For information about UC Davis Secure Login, see <a href="http://xbase.ucdavis.edu/itexpress/?p=article&amp;art=1065&amp;printable=1" target="_blank">Secure Login FAQ</a></span>
+      </td>
+   </tr>
+   
+   
+   
+<tr>
+   <td class="black-xtrasmall" colspan="2" align="center"><hr>
+      Copyright © 2006 The Regents of the University of California
+      <br>
+      Send feedback on this site to <a href="http://itexpress.ucdavis.edu/about/#contact" target="_blank">http://itexpress.ucdavis.edu/about/#contact</a>
+   </td>
+</tr>
+</tbody></table>
+<p></p>
+</div>
+</body></html>
