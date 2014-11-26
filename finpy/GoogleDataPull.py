@@ -6,8 +6,8 @@ Created on April 1, 2013
 Pulling Yahoo CSV Data
 """
 
-import urllib2
-import urllib
+import urllib.request, urllib.error, urllib.parse
+import urllib.request, urllib.parse, urllib.error
 import datetime
 import os
 import argparse
@@ -34,12 +34,12 @@ def get_data(data_path, ls_symbols):
         dt_start=datetime.datetime(1986, 1, 1, 16)
         try:
             month = dt_start.month - 1
-            params= urllib.urlencode ({'a':month, 'b':dt_start.day, 'c':dt_start.year, 'd':_now.month, 'e':_now.day, 'f':_now.year, 's': symbol})
+            params= urllib.parse.urlencode ({'a':month, 'b':dt_start.day, 'c':dt_start.year, 'd':_now.month, 'e':_now.day, 'f':_now.year, 's': symbol})
             # Fix for ubuntu. For some reasons, ubuntu put %0D at the end
             if params[-3:] == "%0D":
                 params = params[:-3]
             url = "http://ichart.finance.yahoo.com/table.csv?%s" % params
-            url_get= urllib2.urlopen(url)
+            url_get= urllib.request.urlopen(url)
             
             header= url_get.readline()
             symbol_data.append (url_get.readline())
@@ -59,19 +59,19 @@ def get_data(data_path, ls_symbols):
                # print url_line
             f.close();    
                         
-        except urllib2.HTTPError:
+        except urllib.error.HTTPError:
             miss_ctr += 1
-            print "Unable to fetch data for stock: {0} at {1}".format(symbol_name, url)
-        except urllib2.URLError:
+            print("Unable to fetch data for stock: {0} at {1}".format(symbol_name, url))
+        except urllib.error.URLError:
             miss_ctr += 1
-            print "URL Error for stock: {0} at {1}".format(symbol_name, url)
+            print("URL Error for stock: {0} at {1}".format(symbol_name, url))
             
-    print "All done. Got {0} stocks. Could not get {1}".format(len(ls_symbols) - miss_ctr, miss_ctr)
+    print("All done. Got {0} stocks. Could not get {1}".format(len(ls_symbols) - miss_ctr, miss_ctr))
 
 def latest_local(file_path):
     with open(file_path) as f:
-        f.next()
-        topline = f.next()
+        next(f)
+        topline = next(f)
         dt_str = topline.split(',')[0]
         dt = datetime.datetime.strptime(dt_str, "%Y-%m-%d")
         return dt

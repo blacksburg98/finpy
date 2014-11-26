@@ -67,7 +67,7 @@ def eventprofiler(df_events, all_stocks, i_lookback=20, i_lookforward=20,
     # Study Params
     na_mean = np.mean(na_event_rets, axis=0)
     na_std = np.std(na_event_rets, axis=0)
-    li_time = range(-i_lookback, i_lookforward + 1)
+    li_time = list(range(-i_lookback, i_lookforward + 1))
 
     # Plotting the chart
     if out_pict:

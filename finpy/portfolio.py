@@ -13,10 +13,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates 
 import csv
-from order import Order
-from fincommon import FinCommon
+from .order import Order
+from .fincommon import FinCommon
 import finpy.fpdateutil as du
-import utils as ut
+from . import utils as ut
 
 class Portfolio(FinCommon):
     def __init__(self, equities, cash, dates, order_list=None):
@@ -45,7 +45,7 @@ class Portfolio(FinCommon):
     def dailysum(self, date):
         " Calculate the total balance of the date."
         equities_total = np.nansum(
-            [x['shares'][date] * x['close'][date] for x in self.equities.values()])
+            [x['shares'][date] * x['close'][date] for x in list(self.equities.values())])
         total = equities_total + self.cash[date]
         return total
 

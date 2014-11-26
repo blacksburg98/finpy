@@ -1,11 +1,11 @@
 import re
 import json
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import datetime as dt
 
 def get_xbrl_url(final_url):
     try:
-        fp = urllib2.urlopen(final_url)
+        fp = urllib.request.urlopen(final_url)
         next_line_filing_date = False 
         for line in fp:
             filingre = re.search("<div class=\"infoHead\">Filing Date</div>", line)
@@ -22,15 +22,15 @@ def get_xbrl_url(final_url):
             if xmlre:
                 xbrl_url = "http://www.sec.gov" + xmlre.group(1)
         return xbrl_url, filing_date 
-    except urllib2.URLError, e:
-        print final_url
+    except urllib.error.URLError as e:
+        print(final_url)
         return None
 
 def cjk2tick(cjk):
     url = "http://www.sec.gov/cgi-bin/browse-edgar?CIK=" + cjk 
     url += "&Find=Search&owner=exclude&action=getcompany&count=100&type=10-k"
     try:
-        fp = urllib2.urlopen(url)
+        fp = urllib.request.urlopen(url)
         for line in fp:
             lre = re.search("<a href=\"(.*)\" id=\"documentsbutton\">.*Interactive Data</a></td>", line)
             if lre:
@@ -45,21 +45,21 @@ def cjk2tick(cjk):
                         return 
                 else:
                     return 
-    except urllib2.URLError, e:
-        print url
+    except urllib.error.URLError as e:
+        print(url)
         return
 
 def istick(t):
     url = "http://www.sec.gov/cgi-bin/browse-edgar?CIK=" + t
     url += "&Find=Search&owner=exclude&action=getcompany&count=100&type=10-k"
     try:
-        fp = urllib2.urlopen(url)
+        fp = urllib.request.urlopen(url)
         for line in fp:
             lre = re.search("No matching Ticker Symbol", line)
             if lre:
                 return False
         return True
-    except urllib2.URLError, e:
+    except urllib.error.URLError as e:
         print(url)
         return False
 
@@ -69,6 +69,6 @@ def get_stock_quote(ticker_symbol):
     http://coreygoldberg.blogspot.com/2011/09/python-stock-quotes-from-google-finance.html
     """
     url = 'http://finance.google.com/finance/info?q=%s' % ticker_symbol
-    lines = urllib2.urlopen(url).read().splitlines()
+    lines = urllib.request.urlopen(url).read().splitlines()
     return json.loads(''.join([x for x in lines if x not in ('// [', ']')]))
 

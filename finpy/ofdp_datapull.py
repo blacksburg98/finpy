@@ -6,8 +6,8 @@ Created on April 1, 2013
 Pulling Yahoo CSV Data
 """
 
-import urllib2
-import urllib
+import urllib.request, urllib.error, urllib.parse
+import urllib.request, urllib.parse, urllib.error
 import datetime
 import os
 import csv
@@ -21,13 +21,13 @@ def get_data(data_path, ls_symbols):
         os.makedirs(data_path)
 
     for s in ls_symbols:
-        print(s["exchange"], s["sym"]) 
+        print((s["exchange"], s["sym"])) 
         if not (os.access(s["exchange"], os.F_OK)):
             os.makedirs(s["exchange"])
         symbol_data = []
-        params= urllib.urlencode ({'exchange':s["exchange"], 'symbol':s["sym"], 'depth': '1'})
+        params= urllib.parse.urlencode ({'exchange':s["exchange"], 'symbol':s["sym"], 'depth': '1'})
         url = "http://www.ofdp.org/continuous_contracts/data?%s" % params
-        url_get= urllib2.urlopen(url)
+        url_get= urllib.request.urlopen(url)
         html = url_get.read()
         page = BeautifulSoup(html)
         table = page.find('table')

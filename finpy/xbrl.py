@@ -1,5 +1,5 @@
 from lxml import etree
-from xbrl_fundamentals import FundamentantalAccountingConcepts
+from .xbrl_fundamentals import FundamentantalAccountingConcepts
 import re
 
 class XBRL:
@@ -13,7 +13,7 @@ class XBRL:
         self.EntireInstanceDocument = open(XBRLInstanceLocation,'r').read() 
         self.oInstance = etree.fromstring(self.EntireInstanceDocument)
         self.ns = {}
-        for k in self.oInstance.nsmap.keys():
+        for k in list(self.oInstance.nsmap.keys()):
             if k != None:
                 self.ns[k] = self.oInstance.nsmap[k]
         self.ns['xbrli'] = 'http://www.xbrl.org/2003/instance'
@@ -32,7 +32,7 @@ class XBRL:
             FundamentantalAccountingConcepts(self)
             return True
         else:
-            print currentEnd, ' is not a date'
+            print(currentEnd, ' is not a date')
             return False
             
     def getNodeList(self,xpath,root=None):
@@ -65,14 +65,14 @@ class XBRL:
         oNode = self.getNode("//" + SeekConcept + "[@contextRef='" + ContextReference + "']")
         if oNode is not None:                    
             factValue = oNode.text
-            if 'nil' in oNode.keys() and oNode.get('nil')=='true':
+            if 'nil' in list(oNode.keys()) and oNode.get('nil')=='true':
                 factValue=0
                 #set the value to ZERO if it is nil
             #if type(factValue)==str:
             try:
                 factValue = float(factValue)
             except:
-                print 'couldnt convert %s=%s to string' % (SeekConcept,factValue)
+                print('couldnt convert %s=%s to string' % (SeekConcept,factValue))
                 factValue = None
                 pass
             
@@ -164,7 +164,7 @@ class XBRL:
             
             ContextID = i.get('contextRef') 
             ContextPeriod = self.getNode("//xbrli:context[@id='" + ContextID + "']/xbrli:period/xbrli:instant").text
-            print ContextPeriod
+            print(ContextPeriod)
             
             #Nodelist of all the contexts of the fact us-gaap:Assets
             oNodelist3 = self.getNodeList("//xbrli:context[@id='" + ContextID + "']")
@@ -177,7 +177,7 @@ class XBRL:
                                         
                     if not len(oNode4):
                         UseContext = ContextID
-                        print UseContext
+                        print(UseContext)
                                                     
             
         """
@@ -254,15 +254,15 @@ class XBRL:
                     
                         #Get the year-to-date context, not the current period
                         StartDate = self.getNode("xbrli:period/xbrli:startDate",j).text
-                        print "Context start date: " + StartDate
-                        print "YTD start date: " + StartDateYTD
+                        print("Context start date: " + StartDate)
+                        print("YTD start date: " + StartDateYTD)
                         
                         if StartDate <= StartDateYTD:
                             #MsgBox "YTD is greater"
                             #Start date is for quarter
-                            print "Context start date is less than current year to date, replace"
-                            print "Context start date: " + StartDate
-                            print "Current min: " + StartDateYTD
+                            print("Context start date is less than current year to date, replace")
+                            print("Context start date: " + StartDate)
+                            print("Current min: " + StartDateYTD)
                             
                             StartDateYTD = StartDate
                             UseContext = j.get('id')
@@ -270,17 +270,17 @@ class XBRL:
                         else:
                             #MsgBox "Context is greater"
                             #Start date is for year
-                            print "Context start date is greater than YTD, keep current YTD"
-                            print "Context start date: " + StartDate
+                            print("Context start date is greater than YTD, keep current YTD")
+                            print("Context start date: " + StartDate)
                             
                             StartDateYTD = StartDateYTD
 
                         
-                        print "Use context ID: " + UseContext
-                        print "Current min: " + StartDateYTD
-                        print " "
+                        print("Use context ID: " + UseContext)
+                        print("Current min: " + StartDateYTD)
+                        print(" ")
                                         
-                        print "Use context: " + UseContext
+                        print("Use context: " + UseContext)
                             
 
         #Balance sheet date of current period

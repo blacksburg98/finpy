@@ -27,9 +27,9 @@ def _cache_dates():
         # filename = os.environ['QS'] + "/qstkutil/NYSE_dates.txt"
         filename = os.path.join(os.path.dirname(__file__), 'NYSE_dates.txt')
     except KeyError:
-        print "Please be sure you have NYSE_dates.txt in the qstkutil directory"
-
-    datestxt = np.loadtxt(filename, dtype=str)
+        print("Please be sure you have NYSE_dates.txt in the qstkutil directory")
+    with open(filename) as f:
+        datestxt = [x.strip('\n') for x in f]
     dates = []
     for i in datestxt:
         dates.append(dt.datetime.strptime(i, "%m/%d/%Y"))
@@ -172,8 +172,8 @@ def getNextNNYSEdays(startday, days, timeofday):
         # filename = os.environ['QS'] + "/qstkutil/NYSE_dates.txt"
         filename = os.path.join(os.path.dirname(__file__), 'NYSE_dates.txt')
     except KeyError:
-        print "Please be sure to set the value for QS in config.sh or\n"
-        print "in local.sh and then \'source local.sh\'.\n"
+        print("Please be sure to set the value for QS in config.sh or\n")
+        print("in local.sh and then \'source local.sh\'.\n")
 
     datestxt = np.loadtxt(filename,dtype=str)
     dates=[]
@@ -198,8 +198,8 @@ def getPrevNNYSEday(startday, timeofday):
         # filename = os.environ['QS'] + "/qstkutil/NYSE_dates.txt"
         filename = os.path.join(os.path.dirname(__file__), 'NYSE_dates.txt')
     except KeyError:
-        print "Please be sure to set the value for QS in config.sh or\n"
-        print "in local.sh and then \'source local.sh\'.\n"
+        print("Please be sure to set the value for QS in config.sh or\n")
+        print("in local.sh and then \'source local.sh\'.\n")
 
     datestxt = np.loadtxt(filename,dtype=str)
 
@@ -263,7 +263,7 @@ def _trade_dates(dt_start, dt_end, s_period):
         dr_range = pd.DateRange(dt_start, dt_end,
                                 timeRule=s_period[1:])
         dr_range = np.asarray(dr_range)
-        li_even = np.array(range(len(dr_range)))
+        li_even = np.array(list(range(len(dr_range))))
         dr_range = dr_range[li_even[li_even % 2 == 0]]
     else:
         dr_range = pd.DateRange(dt_start, dt_end,

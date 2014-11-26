@@ -22,9 +22,8 @@ import csv
 import pickle as pkl
 import time
 import datetime as dt
-import dircache
 import tempfile
-import YahooDataPull 
+from . import YahooDataPull 
 
 
 class Exchange (object):
@@ -95,7 +94,7 @@ class DataAccess(object):
 #        print "Data Directory: ", self.rootdir
 
         if not os.path.isdir(self.rootdir):
-            print "Data path provided is invalid"
+            print("Data path provided is invalid")
             raise
 
         if not os.path.exists(self.scratchdir):
@@ -230,7 +229,7 @@ class DataAccess(object):
                 if bIncDelist:
                     lsDelPaths = self.getPathOfFile( symbol, True )
                     if file_path == None and len(lsDelPaths) > 0:
-                        print 'Found delisted paths:', lsDelPaths
+                        print('Found delisted paths:', lsDelPaths)
                 
                 ''' If we don't have a file path continue... unless we have delisted paths '''
                 if (type (file_path) != type ("random string")):
@@ -241,7 +240,7 @@ class DataAccess(object):
                     _file = open(file_path, "rb")
             except IOError:
                 # If unable to read then continue. The value for this stock will be nan
-                print _file
+                print(_file)
                 continue;
                 
             assert( not _file == None or bIncDelist == True )
@@ -249,8 +248,8 @@ class DataAccess(object):
             if _file != None:
                 if (self.source==DataSource.CUSTOM) or (self.source==DataSource.YAHOO)or (self.source==DataSource.MLT):
                     creader = csv.reader(_file)
-                    row=creader.next()
-                    row=creader.next()
+                    row=next(creader)
+                    row=next(creader)
                     #row.pop(0)
                     for i, item in enumerate(row):
                         if i==0:
@@ -300,7 +299,7 @@ class DataAccess(object):
                         
             #now remove all the columns except the timestamps and one data column
             if verbose:
-                print self.getPathOfFile(symbol)
+                print(self.getPathOfFile(symbol))
             
             ''' Fix 1 row case by reshaping '''
             if( naData.ndim == 1 ):
@@ -322,7 +321,7 @@ class DataAccess(object):
                 num_rows= temp_np.shape[0]
 
                 
-                symbol_ts_list = range(num_rows) # preallocate
+                symbol_ts_list = list(range(num_rows)) # preallocate
                 for i in range (0, num_rows):
 
                     timebase = temp_np[i][0]
@@ -443,7 +442,7 @@ class DataAccess(object):
         # final complete filename
         cachefilename = self.scratchdir + '/' + hashstr + '.pkl'
         if verbose:
-            print "cachefilename is: " + cachefilename
+            print("cachefilename is: " + cachefilename)
 
         # now eather read the pkl file, or do a hardread
         readfile = False  # indicate that we have not yet read the file
@@ -459,7 +458,7 @@ class DataAccess(object):
         if os.path.exists(cachefilename):
             if ((dt.datetime.now() - dt.datetime.fromtimestamp(os.path.getmtime(cachefilename))) < cachestall):
                 if verbose:
-                    print "cache hit"
+                    print("cache hit")
                 try:
                     cachefile = open(cachefilename, "rb")
                     start = time.time() # start timer
@@ -469,36 +468,36 @@ class DataAccess(object):
                     cachefile.close()
                 except IOError:
                     if verbose:
-                        print "error reading cache: " + cachefilename
-                        print "recovering..."
+                        print("error reading cache: " + cachefilename)
+                        print("recovering...")
                 except EOFError:
                     if verbose:
-                        print "error reading cache: " + cachefilename
-                        print "recovering..."
+                        print("error reading cache: " + cachefilename)
+                        print("recovering...")
         if (readfile!=True):
             if verbose:
-                print "cache miss"
-                print "beginning hardread"
+                print("cache miss")
+                print("beginning hardread")
             start = time.time() # start timer
             if verbose:
-                print "data_item(s): " + str(data_item)
-                print "symbols to read: " + str(symbol_list)
+                print("data_item(s): " + str(data_item))
+                print("symbols to read: " + str(symbol_list))
             retval = self.get_data_hardread(ts_list, 
                 symbol_list, data_item, verbose, bIncDelist)
             elapsed = time.time() - start # end timer
             if verbose:
-                print "end hardread"
-                print "saving to cache"
+                print("end hardread")
+                print("saving to cache")
             try:
                 cachefile = open(cachefilename,"wb")
                 pkl.dump(retval, cachefile, -1)
-                os.chmod(cachefilename,0666)
+                os.chmod(cachefilename,0o666)
             except IOError:
-                print "error writing cache: " + cachefilename
+                print("error writing cache: " + cachefilename)
             if verbose:
-                print "end saving to cache"
+                print("end saving to cache")
             if verbose:
-                print "reading took " + str(elapsed) + " seconds"
+                print("reading took " + str(elapsed) + " seconds")
         return retval
 
     def getPathOfFile(self, symbol_name, bDelisted=False):
@@ -525,14 +524,14 @@ class DataAccess(object):
                 if re.search('Delisted Securities', sPath) == None:
                     continue
 
-                for sFile in dircache.listdir(sPath):
+                for sFile in os.listdir(sPath):
                     if not re.match( '%s-\d*.pkl'%symbol_name, sFile ) == None:
                         lsPaths.append(sPath + sFile)
 
             lsPaths.sort()
             return lsPaths
 
-        print "Did not find path to " + str(symbol_name) + ". Looks like this file is missing"
+        print("Did not find path to " + str(symbol_name) + ". Looks like this file is missing")
 
     def getPathOfCSVFile(self, symbol_name):
         for path1 in self.folderList:
@@ -541,7 +540,7 @@ class DataAccess(object):
                 return (str(str(path1)+str(symbol_name)+".csv"))
             #if ends
         #for ends
-        print "Did not find path to " + str (symbol_name)+". Looks like this file is missing"    
+        print("Did not find path to " + str (symbol_name)+". Looks like this file is missing")    
 
     def get_all_symbols (self):
         '''
@@ -558,11 +557,11 @@ class DataAccess(object):
         for path in self.folderList:
             stocksAtThisPath = list()
             #print str(path)
-            stocksAtThisPath = dircache.listdir(str(path))
+            stocksAtThisPath = os.listdir(str(path))
             #Next, throw away everything that is not a .pkl And these are our stocks!
-            stocksAtThisPath = filter (lambda x:(str(x).find(str(self.fileExtensionToRemove)) > -1), stocksAtThisPath)
+            stocksAtThisPath = [x for x in stocksAtThisPath if (str(x).find(str(self.fileExtensionToRemove)) > -1)]
             #Now, we remove the .pkl to get the name of the stock
-            stocksAtThisPath = map(lambda x:(x.partition(str(self.fileExtensionToRemove))[0]),stocksAtThisPath)
+            stocksAtThisPath = [(x.partition(str(self.fileExtensionToRemove))[0]) for x in stocksAtThisPath]
 
             listOfStocks.extend(stocksAtThisPath)
             #for stock in stocksAtThisPath:
@@ -594,15 +593,15 @@ class DataAccess(object):
         '''
 
         pathtolook = self.rootdir + self.midPath + subdir
-        stocksAtThisPath = dircache.listdir(pathtolook)
+        stocksAtThisPath = os.listdir(pathtolook)
 
         #Next, throw away everything that is not a .pkl And these are our stocks!
         try:
-            stocksAtThisPath = filter (lambda x:(str(x).find(str(self.fileExtensionToRemove)) > -1), stocksAtThisPath)
+            stocksAtThisPath = [x for x in stocksAtThisPath if (str(x).find(str(self.fileExtensionToRemove)) > -1)]
             #Now, we remove the .pkl to get the name of the stock
-            stocksAtThisPath = map(lambda x:(x.partition(str(self.fileExtensionToRemove))[0]),stocksAtThisPath)
+            stocksAtThisPath = [(x.partition(str(self.fileExtensionToRemove))[0]) for x in stocksAtThisPath]
         except:
-            print "error: no path to " + subdir
+            print("error: no path to " + subdir)
             stocksAtThisPath = list()
 
         return stocksAtThisPath
@@ -623,7 +622,7 @@ class DataAccess(object):
         @return: A list of label strings.
         '''
 
-        print 'Function only valid for Compustat objects!'
+        print('Function only valid for Compustat objects!')
         return []
 
     def get_info(self):
@@ -665,9 +664,24 @@ class DataAccess(object):
         else:
             retstr = "DataAccess internal error\n"
 
-        print retstr
+        print(retstr)
         return retstr
         #get_sublists
 
+def get_tickdata(ls_symbols, ldt_timestamps, fill=True):
+    c_dataobj = da.DataAccess('Yahoo', cachestalltime=0)
+    ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
+    ldf_data = c_dataobj.get_data(ldt_timestamps, ls_symbols, ls_keys)
+    d_data = dict(list(zip(ls_symbols, ldf_data)))
+    if fill == True:
+        for s_key in ls_symbols:
+            d_data[s_key] = d_data[s_key].fillna(method = 'ffill')
+            d_data[s_key] = d_data[s_key].fillna(method = 'bfill')
+            d_data[s_key] = d_data[s_key].fillna(1.0)
+    stocks = dict()
+    for s in ls_symbols:
+        stocks[s] = Equity(index=ldt_timestamps, data=d_data[s])
+        stocks[s].normalized()
+    return stocks 
 
     #class DataAccess ends

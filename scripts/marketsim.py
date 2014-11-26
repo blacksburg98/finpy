@@ -53,19 +53,19 @@ if __name__ == '__main__':
     pf.sim()
     equity_col = ['buy', 'sell', 'close']
     pf.csvwriter(csv_file=value_file, d=',', cash=False)
-    print "The final value of the portfolio using the sample file is -- ", pf.total[-1]
-    print "Details of the Performance of the portfolio :"
-    print "Data Range :",    ldt_timestamps[0],    "to",    ldt_timestamps[-1]
-    print "Sharpe Ratio of Fund :", pf.sharpe_ratio() 
-    print "Sortino Ratio of Fund :", pf.sortino() 
-    print "Sharpe Ratio of $GSPC :", pf.equities['$GSPC'].sharpe_ratio()
-    print "Total Return of Fund :", pf.return_ratio()
-    print " Total Return of $GSPC :", pf.equities['$GSPC'].return_ratio()
-    print "Standard Deviation of Fund :", pf.std()
-    print " Standard Deviation of $GSPC :", pf.equities['$GSPC'].std()
-    print "Average Daily Return of Fund :", pf.avg_daily_return()
-    print "Average Daily Return of $GSPC :", pf.equities['$GSPC'].avg_daily_return()
-    print "Information Ratio of Fund:", pf.info_ratio(pf.equities['$GSPC'])
+    print("The final value of the portfolio using the sample file is -- ", pf.total[-1])
+    print("Details of the Performance of the portfolio :")
+    print("Data Range :",    ldt_timestamps[0],    "to",    ldt_timestamps[-1])
+    print("Sharpe Ratio of Fund :", pf.sharpe_ratio()) 
+    print("Sortino Ratio of Fund :", pf.sortino()) 
+    print("Sharpe Ratio of $GSPC :", pf.equities['$GSPC'].sharpe_ratio())
+    print("Total Return of Fund :", pf.return_ratio())
+    print(" Total Return of $GSPC :", pf.equities['$GSPC'].return_ratio())
+    print("Standard Deviation of Fund :", pf.std())
+    print(" Standard Deviation of $GSPC :", pf.equities['$GSPC'].std())
+    print("Average Daily Return of Fund :", pf.avg_daily_return())
+    print("Average Daily Return of $GSPC :", pf.equities['$GSPC'].avg_daily_return())
+    print("Information Ratio of Fund:", pf.info_ratio(pf.equities['$GSPC']))
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.plot(ldt_timestamps, pf.equities['$GSPC'].normalized())
@@ -76,5 +76,5 @@ if __name__ == '__main__':
     pdf_file = order_file + '.pdf'
     fig.savefig(pdf_file, format='pdf')
     beta, alpha = pf.beta_alpha(pf.equities['$GSPC'])
-    print "Beta of the fund is ", beta, ". Alpha of the fund is ", alpha
+    print("Beta of the fund is ", beta, ". Alpha of the fund is ", alpha)
     

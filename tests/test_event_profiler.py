@@ -28,7 +28,7 @@ class TestPortfolioFunctions(unittest.TestCase):
                     s_market_sym='SPY')
 
     def testEvent(self):
-        print "test the number of events ..."
+        print("test the number of events ...")
         self.assertEqual(self.event_no, 176)
         
     def find_events(self, ls_symbols, all_stocks):
@@ -38,7 +38,7 @@ class TestPortfolioFunctions(unittest.TestCase):
             df_tmp[x] = all_stocks[x]['actual_close']
         df_close = pd.DataFrame(df_tmp)
         ts_market = all_stocks['SPY']['actual_close']
-        print "Finding Events"
+        print("Finding Events")
         # Creating an empty dataframe
         df_events = copy.deepcopy(df_close)
         df_events = df_events * np.NAN
@@ -56,7 +56,7 @@ class TestPortfolioFunctions(unittest.TestCase):
                 # Event is found if the symbol is smaller than 5.0 today and 
                 # greater or equal to 5.0 yesterday.
                 if (f_symprice_today < 5.0 and f_symprice_yest >= 5.0):
-                    print s_sym, i, ldt_timestamps[i], f_symprice_yest, f_symprice_today
+                    print(s_sym, i, ldt_timestamps[i], f_symprice_yest, f_symprice_today)
                     df_events[s_sym].ix[ldt_timestamps[i]] = 1
         return df_events
 if __name__ == '__main__':

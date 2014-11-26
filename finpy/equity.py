@@ -11,8 +11,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates 
 import finpy.fpdateutil as du
-import utils as ut
-from fincommon import FinCommon
+from . import utils as ut
+from .fincommon import FinCommon
 
 class Equity(pd.DataFrame, FinCommon):
     """
