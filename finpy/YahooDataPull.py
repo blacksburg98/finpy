@@ -45,17 +45,16 @@ def get_data(data_path, ls_symbols, src="Yahoo"):
             symbol_data.append (url_get.readline())
             while (len(symbol_data[-1]) > 0):
                 symbol_data.append(url_get.readline())
-            
             symbol_data.pop(-1) #The last element is going to be the string of length zero. We don't want to write that to file.
             #now writing data to file
             f= open (data_path + symbol_name + ".csv", 'w')
             
             #Writing the header
-            f.write (header)
+            f.write (header.decode("utf-8"))
             
             while (len(symbol_data) > 0):
                 url_line = symbol_data.pop(0)
-                f.write (url_line)
+                f.write (url_line.decode("utf-8"))
                # print url_line
             f.close();    
                         
@@ -70,9 +69,10 @@ def get_data(data_path, ls_symbols, src="Yahoo"):
 
 def latest_local(file_path):
     with open(file_path) as f:
-        next(f)
-        topline = next(f)
+        f.readline()
+        topline = f.readline()
         dt_str = topline.split(',')[0]
+        print(dt_str)
         dt = datetime.datetime.strptime(dt_str, "%Y-%m-%d")
         return dt
 

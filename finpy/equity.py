@@ -11,9 +11,25 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates 
 import finpy.fpdateutil as du
-from . import utils as ut
+import finpy.dataaccess as da
+from .utils import pre_timestamps
 from .fincommon import FinCommon
 
+def get_tickdata(ls_symbols, ldt_timestamps, fill=True):
+    c_dataobj = da.DataAccess('Yahoo', cachestalltime=0)
+    ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
+    ldf_data = c_dataobj.get_data(ldt_timestamps, ls_symbols, ls_keys)
+    d_data = dict(list(zip(ls_symbols, ldf_data)))
+    if fill == True:
+        for s_key in ls_symbols:
+            d_data[s_key] = d_data[s_key].fillna(method = 'ffill')
+            d_data[s_key] = d_data[s_key].fillna(method = 'bfill')
+            d_data[s_key] = d_data[s_key].fillna(1.0)
+    stocks = dict()
+    for s in ls_symbols:
+        stocks[s] = Equity(index=ldt_timestamps, data=d_data[s])
+        stocks[s].normalized()
+    return stocks 
 class Equity(pd.DataFrame, FinCommon):
     """
     Equity is something that will be/was/is in the Portfolio.
@@ -109,10 +125,10 @@ class Equity(pd.DataFrame, FinCommon):
         If mi_only, then return the moving average only.
         """
         ldt_timestamps = self.ldt_timestamps()
-        pre_timestamps = ut.pre_timestamps(ldt_timestamps, window)
+        pre_timestamps = pre_timestamps(ldt_timestamps, window)
         # ldf_data has the data prior to our current interest.
         # This is used to calculate moving average for the first window.
-        ldf_data = ut.get_tickdata([tick], pre_timestamps)
+        ldf_data = get_tickdata([tick], pre_timestamps)
         merged_data = pd.concat([ldf_data[tick]['close'], self['close']])
         bo = dict()
         bo['mi'] = pd.rolling_mean(merged_data, window=window)[ldt_timestamps] 
@@ -131,10 +147,10 @@ class Equity(pd.DataFrame, FinCommon):
         Drawdown is the difference between the peak and the current value.
         """
         ldt_timestamps = self.index
-        pre_timestamps = ut.pre_timestamps(ldt_timestamps, window)
+        pre_timestamps = pre_timestamps(ldt_timestamps, window)
         # ldf_data has the data prior to our current interest.
         # This is used to calculate moving average for the first window.
-        ldf_data = ut.get_tickdata([tick], pre_timestamps)
+        ldf_data = get_tickdata([tick], pre_timestamps)
         merged_data = pd.concat([ldf_data[tick]['close'], self['close']])
         total_timestamps = merged_data.index
         dd = pd.Series(index=ldt_timestamps)
@@ -192,10 +208,10 @@ class Equity(pd.DataFrame, FinCommon):
         Return the rolling standard deviation of normalized price
         """
         ldt_timestamps = self.ldt_timestamps()
-        pre_timestamps = ut.pre_timestamps(ldt_timestamps, window)
+        pre_timestamps = pre_timestamps(ldt_timestamps, window)
         # ldf_data has the data prior to our current interest.
         # This is used to calculate moving average for the first window.
-        ldf_data = ut.get_tickdata([tick], pre_timestamps)
+        ldf_data = get_tickdata([tick], pre_timestamps)
         merged_data = pd.concat([ldf_data[tick]['close'], self['close']])
         all_timestamps = pre_timestamps + ldt_timestamps
         merged_daily_rtn = pd.Series(self.daily_return(merged_data), index=all_timestamps) 

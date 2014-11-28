@@ -4,14 +4,10 @@ This source code is released under the Apache license.
 blacksburg98@yahoo.com
 Created on November 24, 2014
 """
-from . import dataaccess as da
-from .equity import Equity
 import datetime as dt
 from . import fpdateutil as du
 import numpy as np
 import pandas as pd
-
-
 def riskfree_return(ldt_timestamps, rf_tick="$TNX"):
     """
     Default is $TNX. Ten-year treasury rate
