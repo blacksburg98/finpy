@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='FinPy',
-    version='0.1.006',
+    version='0.2.001',
     author='Tsung-Han Yang',
     author_email='blacksburg98@yahoo.com',
     packages=['finpy'],
