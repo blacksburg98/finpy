@@ -7,7 +7,6 @@ Pulling Yahoo CSV Data
 """
 
 import urllib.request, urllib.error, urllib.parse
-import urllib.request, urllib.parse, urllib.error
 import datetime
 import os
 import argparse
@@ -72,7 +71,6 @@ def latest_local(file_path):
         f.readline()
         topline = f.readline()
         dt_str = topline.split(',')[0]
-        print(dt_str)
         dt = datetime.datetime.strptime(dt_str, "%Y-%m-%d")
         return dt
 

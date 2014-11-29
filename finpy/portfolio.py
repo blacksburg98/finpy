@@ -253,8 +253,8 @@ class Portfolio(FinCommon):
         Randomly return a ticker in the portfolio.
         The items in exclude list are not in the select pool.
         """
-        ex_set = Set(exclude)
-        pf_set = Set([x for x in self.equities])
+        ex_set = set(exclude)
+        pf_set = set([x for x in self.equities])
         sel_ls = [s for s in pf_set - ex_set]
         return random.choice(sel_ls) 
 

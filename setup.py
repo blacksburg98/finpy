@@ -12,12 +12,12 @@ setup(
     url='http://pypi.python.org/pypi/FinPy/',
     license='LICENSE.txt',
     description='Financial Python. Using python to do stock analysis.',
-    long_description=open('README.txt').read(),
+    long_description=open('README.md').read(),
     install_requires=[
         "NumPy >= 1.6.1",
         "pandas >= 0.7.3",
         "matplotlib >= 1.2.1",
-        "python == 2.7",
+        "python >= 3.0",
     ],
     classifiers = [
         "Intended Audience :: Financial and Insurance Industry",

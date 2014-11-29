@@ -7,7 +7,7 @@ import datetime as dt
 import finpy.fpdateutil as du
 import finpy.eventprofiler as ep
 import finpy.dataaccess as da
-from finpy.utils import get_tickdata
+from finpy.equity import get_tickdata
 from finpy.equity import Equity
 class TestPortfolioFunctions(unittest.TestCase):
     def setUp(self):

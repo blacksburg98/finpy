@@ -237,7 +237,7 @@ class DataAccess(object):
                         continue; #File not found
                 
                 if not file_path == None: 
-                    _file = open(file_path, "rb")
+                    _file = open(file_path, "rt", encoding="UTF-8")
             except IOError:
                 # If unable to read then continue. The value for this stock will be nan
                 print(_file)

@@ -15,7 +15,7 @@ class TestPortfolioFunctions(unittest.TestCase):
     """
     def setUp(self):
         order_list = []
-        with open("orders.csv", 'r') as csvfile:
+        with open("orders.csv", 'rt', encoding="UTF-8") as csvfile:
             order_reader = csv.reader(csvfile, delimiter=',', skipinitialspace=True)
             for row in order_reader:
                 date = dt.datetime(int(row[0]),int(row[1]), int(row[2]), 16)
@@ -33,7 +33,6 @@ class TestPortfolioFunctions(unittest.TestCase):
             ls_symbols.append(tick_set.pop())
         ldt_timestamps = du.getNYSEdays(dt_start, dt_end, dt_timeofday)
         cash = 1000000
-        print("Here")
         all_stocks = get_tickdata(ls_symbols=ls_symbols, ldt_timestamps=ldt_timestamps)
         self.pf = Portfolio(equities=all_stocks, cash=cash, dates=ldt_timestamps, order_list=order_list)
         self.benchmark = self.pf.equities['$SPX']
@@ -150,11 +149,4 @@ class TestPortfolioFunctions(unittest.TestCase):
         self.assertEqual(round(self.pf.equities['_AAPL'].appraisal_ratio(self.benchmark), 8), 0.02347507)
 
 if __name__ == '__main__':
-    if 'FINPYDATA' in os.environ:
-        tmp_finpydata = os.environ['FINPYDATA']
-    os.environ['FINPYDATA'] = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data')) 
     unittest.main()
-    if tmp_finpydata in locals():
-        os.environ['FINPYDATA'] = tmp_finpydata
-    else:
-        os.environ.pop('FINPYDATA', None)

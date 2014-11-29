@@ -8,13 +8,17 @@ import datetime as dt
 from . import fpdateutil as du
 import numpy as np
 import pandas as pd
+from . import dataaccess as da
+
 def riskfree_return(ldt_timestamps, rf_tick="$TNX"):
     """
     Default is $TNX. Ten-year treasury rate
     $FVX is another option. Five-Year treasury rate.
     """
-    all_stocks = get_tickdata(ls_symbols=[rf_tick], ldt_timestamps=ldt_timestamps)
-    rf = (all_stocks[rf_tick]['close']/100)/365
+    c_dataobj = da.DataAccess('Yahoo', cachestalltime=0)
+    ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
+    ldf_data = c_dataobj.get_data(ldt_timestamps, [rf_tick], ls_keys)
+    rf = (ldf_data[0]['close']/100)/365
     return rf
 
 def pre_timestamps(ldt_timestamps, window):
