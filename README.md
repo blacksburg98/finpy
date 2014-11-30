@@ -6,7 +6,7 @@ To install
 =====
 Requirement: Python 3
 
-pip.exe install finpy
+pip install finpy
 
 You can also download the window install package if you're using windows.
 Introduction
