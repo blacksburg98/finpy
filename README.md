@@ -1,11 +1,15 @@
-=====
 finpy
+=====
 Financial Python
 =====
 To install
 =====
 Requirement: Python 3
+
 pip.exe install finpy
+
+Introduction
+=====
 You can also download the window install package if you're using windows.
 
 I plan to expand the capabilities. Please let me know if you have 
