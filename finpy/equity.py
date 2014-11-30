@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates 
 import finpy.fpdateutil as du
 import finpy.dataaccess as da
-from .utils import pre_timestamps
+import finpy.utils as ut
 from .fincommon import FinCommon
 
 def get_tickdata(ls_symbols, ldt_timestamps, fill=True):
@@ -125,7 +125,7 @@ class Equity(pd.DataFrame, FinCommon):
         If mi_only, then return the moving average only.
         """
         ldt_timestamps = self.ldt_timestamps()
-        pre_timestamps = pre_timestamps(ldt_timestamps, window)
+        pre_timestamps = ut.pre_timestamps(ldt_timestamps, window)
         # ldf_data has the data prior to our current interest.
         # This is used to calculate moving average for the first window.
         ldf_data = get_tickdata([tick], pre_timestamps)
@@ -147,7 +147,7 @@ class Equity(pd.DataFrame, FinCommon):
         Drawdown is the difference between the peak and the current value.
         """
         ldt_timestamps = self.index
-        pre_timestamps = pre_timestamps(ldt_timestamps, window)
+        pre_timestamps = ut.pre_timestamps(ldt_timestamps, window)
         # ldf_data has the data prior to our current interest.
         # This is used to calculate moving average for the first window.
         ldf_data = get_tickdata([tick], pre_timestamps)
@@ -208,7 +208,7 @@ class Equity(pd.DataFrame, FinCommon):
         Return the rolling standard deviation of normalized price
         """
         ldt_timestamps = self.ldt_timestamps()
-        pre_timestamps = pre_timestamps(ldt_timestamps, window)
+        pre_timestamps = ut.pre_timestamps(ldt_timestamps, window)
         # ldf_data has the data prior to our current interest.
         # This is used to calculate moving average for the first window.
         ldf_data = get_tickdata([tick], pre_timestamps)
