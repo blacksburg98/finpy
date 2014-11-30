@@ -2,8 +2,13 @@
 finpy
 Financial Python
 =====
-This is mainly inspired by QSTK and Professor Tucker's Computational Investing I
- at Coursera. I plan to expand the capabilities. Please let me know if you have 
+To install
+=====
+Requirement: Python 3
+pip.exe install finpy
+You can also download the window install package if you're using windows.
+
+I plan to expand the capabilities. Please let me know if you have 
 any suggestions.
 You can reach me at blacksburg98 (at) yahoo dot com
 
@@ -21,8 +26,7 @@ Please go to https://github.com/blacksburg98/finpy to file a issue if you have
  any problems.
 
 Recommend:
-Copy stock_data to a separate area.
-    cp -R stock_data ~/stock_data
+    This will be the area where the downloaded stock data are stored.
     setenv FINPYDATA ~/stock_data
 
 =====
