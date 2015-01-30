@@ -65,7 +65,7 @@ class Equity(pd.DataFrame, FinCommon):
 
     def fillna_shares(self, date, ldt_timestamps):
         last_valid = self['shares'].last_valid_index()
-        self['shares'][last_valid:date] = self['shares'][last_valid]
+        self.loc[last_valid:date, 'shares'] = self.loc[last_valid, 'shares']
 
     def daily_return(self, data=None):
         """
