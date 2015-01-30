@@ -54,13 +54,13 @@ class Equity(pd.DataFrame, FinCommon):
         Buy stocks.
         """
         self.fillna_shares(date, ldt_timestamps)
-        self['buy'][date] = shares
-        self['shares'][date] += shares
+        self.loc[date, 'buy'] = shares
+        self.loc[date, 'shares'] += shares
 
     def sell(self, date, shares, price, ldt_timestamps):
         self.fillna_shares(date, ldt_timestamps)
-        self['sell'][date] = shares
-        self['shares'][date] -= shares
+        self.loc[date, 'sell'] = shares
+        self.loc[date, 'shares'] -= shares
         return price*shares
 
     def fillna_shares(self, date, ldt_timestamps):
