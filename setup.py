@@ -4,7 +4,7 @@ __currdir__ = os.getcwd()
 __readme__ = os.path.join(__currdir__, 'README.txt')
 setup(
     name='FinPy',
-    version='0.2.003',
+    version='0.2.004',
     author='Tsung-Han Yang',
     author_email='blacksburg98@yahoo.com',
     packages=find_packages(),

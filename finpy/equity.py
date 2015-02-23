@@ -217,6 +217,31 @@ class Equity(pd.DataFrame, FinCommon):
         merged_daily_rtn = pd.Series(self.daily_return(merged_data), index=all_timestamps) 
         sigma = pd.rolling_std(merged_daily_rtn, window=window)
         return sigma[self.index]
+
+    def max_rise(self, tick, date, window=20):
+        """
+        Find the maximum change percentage between the current date and the bottom of the retrospective window.
+        """
+        ldt_timestamps = self.index
+        pre_timestamps = ut.pre_timestamps(ldt_timestamps, window)
+        first = pre_timestamps[0]
+        # ldf_data has the data prior to our current interest.
+        # This is used to calculate moving average for the first window.
+        try:
+            self['close'][first]
+            merged_data = self['close']
+        except:
+            ldf_data = get_tickdata([tick], pre_timestamps)
+            merged_data = pd.concat([ldf_data[tick]['close'], self['close']])
+        if(isinstance(date , int)):
+            int_date = ldt_timestamps[date]
+        else:
+            int_date = date
+        c = merged_data.index.get_loc(int_date)
+        m = merged_data[c-window:c].min()
+        r = (merged_data[c]-m)/m
+        return r
+
 #    def RSI(self):
 #        """
 #        Relative Strength Index

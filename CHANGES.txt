@@ -1,3 +1,6 @@
+0.2.004
+----------------
+adding max_rise
 0.2.003
 ----------------
 Fixing indexing and selecting
