@@ -27,7 +27,7 @@ def get_tickdata(ls_symbols, ldt_timestamps, fill=True):
             d_data[s_key] = d_data[s_key].fillna(1.0)
     stocks = dict()
     for s in ls_symbols:
-        stocks[s] = Equity(index=ldt_timestamps, data=d_data[s])
+        stocks[s] = pd.DataFrame(index=ldt_timestamps, data=d_data[s])
         stocks[s].normalized()
     return stocks 
 class Equity(pd.DataFrame, FinCommon):

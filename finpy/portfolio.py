@@ -27,7 +27,7 @@ class Portfolio(FinCommon):
         total is the daily balance.
         order_list is a list of Order
         """
-        self.equities = equities
+        self.equities = pd.Panel(equities)
         if order_list == None:
             self.order = []
         else:
@@ -43,10 +43,10 @@ class Portfolio(FinCommon):
 
     def dailysum(self, date):
         " Calculate the total balance of the date."
-        equities_total = np.nansum(
-            [x['shares'][date] * x['close'][date] for x in list(self.equities.values())])
-        total = equities_total + self.cash[date]
-        return total
+        equities_total_df = self.equities.loc[:,date]['shares'] * self.equities.loc[:,date,'close ']
+        equities_total = equities_total_df.sum()
+        self.total[date] = equities_total + self.cash[date]
+        return self.total[date]
 
     def buy(self, shares, tick, price, date, update_ol=False):
         """
@@ -98,9 +98,8 @@ class Portfolio(FinCommon):
         """
         if date == None:
             equities_sum = pd.Series(index=self.ldt_timestamps())
-            equities_sum = 0
-            for tick in self.equities:
-                equities_sum += self.equities[tick]['close'] * self.equities[tick]['shares']
+            each_total = self.equities.loc[:,:,'close'] * self.equities[:,:,'shares']
+            equities_sum = each_total.sum(axis=1)
             self.total = self.cash + equities_sum       
         else:
             update_start, update_end = self.fillna(date)
