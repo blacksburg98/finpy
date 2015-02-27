@@ -43,10 +43,9 @@ class Portfolio(FinCommon):
 
     def dailysum(self, date):
         " Calculate the total balance of the date."
-        equities_total_df = self.equities.loc[:,date]['shares'] * self.equities.loc[:,date,'close ']
-        equities_total = equities_total_df.sum()
-        self.total[date] = equities_total + self.cash[date]
-        return self.total[date]
+        equities_total = np.nansum(self.equities.loc[:,date,'shares'] * self.equities.loc[:,date,'close'])
+        total = equities_total + self.cash[date]
+        return total
 
     def buy(self, shares, tick, price, date, update_ol=False):
         """
@@ -54,9 +53,10 @@ class Portfolio(FinCommon):
         Calculate total, shares and cash upto the date.
         Before we buy, we need to update share numbers. "
         """
-#        print "Buy", shares, "shares of ", tick, "at", price, "on", date
         self.cal_total(date)
-        self.equities[tick].buy(date, shares, price, self.ldt_timestamps())
+        last_valid = self.equities.loc[tick,:,'shares'].last_valid_index()
+        self.equities.loc[tick, last_valid:date, 'shares'] = self.equities.loc[tick, last_valid, 'shares']
+        self.equities.loc[tick, date, 'shares'] += shares
         self.cash[date] -= price*shares
         self.total[date] = self.dailysum(date)
         if update_ol:
@@ -67,8 +67,9 @@ class Portfolio(FinCommon):
         Portfolio sell 
         Calculate shares and cash upto the date.
         """
-#        print "Sell", shares, "shares of ", tick, "at", price, "on", date
-        self.equities[tick].sell(date, shares, price, self.ldt_timestamps())
+        last_valid = self.equities.loc[tick,:,'shares'].last_valid_index()
+        self.equities.loc[tick, last_valid:date, 'shares'] = self.equities.loc[tick, last_valid, 'shares']
+        self.equities.loc[tick, date, 'shares'] -= shares
         self.cal_total(date)
         self.cash[date] += price*shares
         self.total[date] = self.dailysum(date)
@@ -89,23 +90,29 @@ class Portfolio(FinCommon):
         """
         update_start, update_end = self.fillna_cash(date)
         for e in self.equities:
-            self.equities[e].fillna_shares(date, self.ldt_timestamps())
+            self.fillna_tick(date, e)
         return update_start, update_end
 
+    def fillna_tick(self, date, tick):
+        update_start = self.equities[tick].last_valid_index()
+        update_end = date
+        self.equities.loc[tick, update_start:update_end,'shares'] = self.equities.loc[tick, update_start, 'shares']
+        return update_start, update_end
+        
     def cal_total(self, date=None):
         """
         Calculate total up to "date".
         """
         if date == None:
             equities_sum = pd.Series(index=self.ldt_timestamps())
-            each_total = self.equities.loc[:,:,'close'] * self.equities[:,:,'shares']
+            each_total = self.equities.loc[:,:,'close'] * self.equities.loc[:,:,'shares']
             equities_sum = each_total.sum(axis=1)
             self.total = self.cash + equities_sum       
         else:
-            update_start, update_end = self.fillna(date)
-            for date_id in range(self.ldt_timestamps().index(update_start),self.ldt_timestamps().index(update_end)+1):
-                xdate = self.ldt_timestamps()[date_id]
-                self.total[date_id] = self.dailysum(xdate)
+            start, end = self.fillna(date)
+            equities_total_df = self.equities.loc[:,start:end,'shares'] * self.equities.loc[:,start:end,'close']
+            equities_total = equities_total_df.sum(axis=1)
+            self.total[start:end ] = equities_total + self.cash[start:end]
 
     def put_orders(self):
         """
@@ -126,7 +133,7 @@ class Portfolio(FinCommon):
         if ldt_timestamps == None:
             ldt_timestamps = self.ldt_timestamps()
         dt_end = ldt_timestamps[-1]
-        self.cal_total(dt_end)
+        self.cal_total()
 
     def csvwriter(self, equity_col=None, csv_file="pf.csv", total=True, cash=True, d=','):
         """

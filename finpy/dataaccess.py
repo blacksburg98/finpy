@@ -425,25 +425,13 @@ class DataAccess(object):
         # Create the hash for the timestamps
         hashts = 0
 
-        # print "test point 1: " + str(len(ts_list))
-        # spyfile=os.environ['QSDATA'] + '/Processed/Norgate/Stocks/US/NYSE Arca/SPY.pkl'
         for i in ts_list:
             hashts = (hashts + hash(i)) % 10000000
         hashstr = 'qstk-' + str (self.source)+'-' +str(abs(hashsyms)) + '-' + str(abs(hashts)) \
             + '-' + str(hash(str(data_item))) #  + '-' + str(hash(str(os.path.getctime(spyfile))))
-
-        # get the directory for scratch files from environment
-        # try:
-        #     scratchdir = os.environ['QSSCRATCH']
-        # except KeyError:
-        #     #self.rootdir = "/hzr71/research/QSData"
-        #     raise KeyError("Please be sure to set the value for QSSCRATCH in config.sh or local.sh")
-
-        # final complete filename
         cachefilename = self.scratchdir + '/' + hashstr + '.pkl'
         if verbose:
             print("cachefilename is: " + cachefilename)
-
         # now eather read the pkl file, or do a hardread
         readfile = False  # indicate that we have not yet read the file
 

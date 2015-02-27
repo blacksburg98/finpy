@@ -15,7 +15,7 @@ import finpy.dataaccess as da
 import finpy.utils as ut
 from .fincommon import FinCommon
 
-def get_tickdata(ls_symbols, ldt_timestamps, fill=True):
+def get_tickdata(ls_symbols, ldt_timestamps, fill=True, df=pd.DataFrame):
     c_dataobj = da.DataAccess('Yahoo', cachestalltime=0)
     ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
     ldf_data = c_dataobj.get_data(ldt_timestamps, ls_symbols, ls_keys)
@@ -27,8 +27,9 @@ def get_tickdata(ls_symbols, ldt_timestamps, fill=True):
             d_data[s_key] = d_data[s_key].fillna(1.0)
     stocks = dict()
     for s in ls_symbols:
-        stocks[s] = pd.DataFrame(index=ldt_timestamps, data=d_data[s])
-        stocks[s].normalized()
+        stocks[s] = df(index=ldt_timestamps, data=d_data[s])
+        stocks[s]['shares'] = np.nan
+        stocks[s]['shares'][0] = 0
     return stocks 
 class Equity(pd.DataFrame, FinCommon):
     """
@@ -49,21 +50,21 @@ class Equity(pd.DataFrame, FinCommon):
         self['buy'] = 0.0
         self['sell'] = 0.0
 
-    def buy(self, date, shares, price, ldt_timestamps):
+    def buy(self, date, shares, price):
         """
         Buy stocks.
         """
-        self.fillna_shares(date, ldt_timestamps)
+        self.fillna_shares(date)
         self.loc[date, 'buy'] = shares
         self.loc[date, 'shares'] += shares
 
-    def sell(self, date, shares, price, ldt_timestamps):
-        self.fillna_shares(date, ldt_timestamps)
+    def sell(self, date, shares, price):
+        self.fillna_shares(date)
         self.loc[date, 'sell'] = shares
         self.loc[date, 'shares'] -= shares
         return price*shares
 
-    def fillna_shares(self, date, ldt_timestamps):
+    def fillna_shares(self, date):
         last_valid = self['shares'].last_valid_index()
         self.loc[last_valid:date, 'shares'] = self.loc[last_valid, 'shares']
 
