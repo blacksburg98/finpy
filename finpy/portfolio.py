@@ -67,10 +67,10 @@ class Portfolio(FinCommon):
         Portfolio sell 
         Calculate shares and cash upto the date.
         """
+        self.cal_total(date)
         last_valid = self.equities.loc[tick,:,'shares'].last_valid_index()
         self.equities.loc[tick, last_valid:date, 'shares'] = self.equities.loc[tick, last_valid, 'shares']
         self.equities.loc[tick, date, 'shares'] -= shares
-        self.cal_total(date)
         self.cash[date] += price*shares
         self.total[date] = self.dailysum(date)
         if update_ol:
@@ -89,16 +89,10 @@ class Portfolio(FinCommon):
         return update_start and update_end.
         """
         update_start, update_end = self.fillna_cash(date)
-        for e in self.equities:
-            self.fillna_tick(date, e)
+        for tick in self.equities:
+            self.equities.loc[tick, update_start:update_end,'shares'] = self.equities.loc[tick, update_start, 'shares']
         return update_start, update_end
 
-    def fillna_tick(self, date, tick):
-        update_start = self.equities[tick].last_valid_index()
-        update_end = date
-        self.equities.loc[tick, update_start:update_end,'shares'] = self.equities.loc[tick, update_start, 'shares']
-        return update_start, update_end
-        
     def cal_total(self, date=None):
         """
         Calculate total up to "date".
