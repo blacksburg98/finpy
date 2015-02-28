@@ -111,7 +111,7 @@ class Portfolio(FinCommon):
     def put_orders(self):
         """
         Put the order list to the DataFrame.
-        Update shares, cash, buy and sell columns of each Equity
+        Update shares, cash columns of each Equity
         """
         for o in self.order:
             if o.action.lower() == "buy":
@@ -197,8 +197,11 @@ class Portfolio(FinCommon):
         " Standard Deviation of the daily_return "
         return np.std(self.daily_return())
 
-    def normalized(self):
-        return self.total/self.total[0]
+    def normalized(self, tick=None):
+        if tick == None:
+            return self.total/self.total[0]
+        else:
+            return self.equities[tick]['close']/self.equities[tick]['close'][0]
 
     def sortino(self, k=252):
         """
@@ -212,16 +215,22 @@ class Portfolio(FinCommon):
         sortino = (self.avg_daily_return() / sortino_dev) * np.sqrt(k)
         return sortino
 
-    def return_ratio(self):
+    def return_ratio(self, tick=None):
         " Return the return ratio of the period "
-        return self.total[-1]/self.total[0]
+        if tick == None:
+            return self.total[-1]/self.total[0]
+        else:
+            return self.equities.loc[tick, -1, 'close']/self.equities.loc[tick, 0, 'close']
 
-    def moving_average(self, window=20):
+    def moving_average(self, window=20, tick=None):
         """
         Return an array of moving average. Window specified how many days in
         a window.
         """
-        ma = pd.stats.moments.rolling_mean(self.total, window=window)
+        if tick == None:
+            ma = pd.stats.moments.rolling_mean(self.total, window=window)
+        else:
+            ma = self.equities[tick].stats.moments.rolling_mean(window=window)
         ma[0:window] = ma[window]
         return ma
 
@@ -275,3 +284,29 @@ class Portfolio(FinCommon):
         dt_timeofday = dt.timedelta(hours=16)
         ldt_timestamps = du.getNYSEdays(dt_start, dt_end, dt_timeofday)
         return ldt_timestamps
+
+    def bollinger_band(self, tick, window=20, k=2, mi_only=False):
+        """
+        Return four arrays for Bollinger Band.
+        The first one is the moving average.
+        The second one is the upper band.
+        The thrid one is the lower band.
+        The fourth one is the Bollinger value.
+        If mi_only, then return the moving average only.
+        """
+        ldt_timestamps = self.ldt_timestamps()
+        pre_timestamps = ut.pre_timestamps(ldt_timestamps, window)
+        # ldf_data has the data prior to our current interest.
+        # This is used to calculate moving average for the first window.
+        ldf_data = get_tickdata([tick], pre_timestamps)
+        merged_data = pd.concat([ldf_data[tick]['close'], self.equities[tick]['close']])
+        bo = dict()
+        bo['mi'] = pd.rolling_mean(merged_data, window=window)[ldt_timestamps] 
+        if mi_only:
+            return bo['mi']
+        else:
+            sigma = pd.rolling_std(merged_data, window=window)
+            bo['hi'] = bo['mi'] + k * sigma[ldt_timestamps] 
+            bo['lo'] = bo['mi'] - k * sigma[ldt_timestamps] 
+            bo['ba'] = (merged_data[ldt_timestamps] - bo['mi']) / (k * sigma[ldt_timestamps])
+            return bo
