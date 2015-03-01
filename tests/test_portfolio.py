@@ -35,7 +35,6 @@ class TestPortfolioFunctions(unittest.TestCase):
         cash = 1000000
         all_stocks = get_tickdata(ls_symbols=ls_symbols, ldt_timestamps=ldt_timestamps)
         self.pf = Portfolio(equities=all_stocks, cash=cash, dates=ldt_timestamps, order_list=order_list)
-        self.benchmark = self.pf.equities['$SPX']
         self.pf.sim()
 
     def test_total(self):
@@ -76,20 +75,20 @@ class TestPortfolioFunctions(unittest.TestCase):
 
     def test_beta(self):
         print("test beta...")
-        beta = self.pf.beta(self.pf.equities['$SPX'])
+        beta = self.pf.beta('$SPX')
         self.assertEqual(round(beta,4), -0.4234)
 
     def test_info_ratio(self):
         print("test information ratio...")
-        self.assertEqual(round(self.pf.info_ratio(self.pf.equities['$SPX']), 4), 0.0467)
+        self.assertEqual(round(self.pf.info_ratio('$SPX'), 4), 0.0467)
 
     def test_appraisal_ratio(self):
         print("test appraisal ratio...")
-        self.assertEqual(round(self.pf.appraisal_ratio(self.pf.equities['$SPX']), 4), 0.0363)
+        self.assertEqual(round(self.pf.appraisal_ratio('$SPX'), 4), 0.0363)
 
     def test_residual_return(self):
         print("test residual return...")
-        self.assertEqual(round(self.pf.mean_residual_return(self.pf.equities['$SPX']), 6), 0.000449)
+        self.assertEqual(round(self.pf.mean_residual_return('$SPX'), 6), 0.000449)
 
     def test_equity_total(self):
         print("test equity total...")
@@ -97,57 +96,37 @@ class TestPortfolioFunctions(unittest.TestCase):
         
     def test_equity_sharpe_ratio(self):
         print("test equity sharpe...")
-        self.assertEqual(round(self.pf.equities['_AAPL'].sharpe_ratio(), 4), 0.0399)
+        self.assertEqual(round(self.pf.sharpe_ratio(tick='_AAPL'), 4), 0.0399)
 
-    def test_equity_totalReturn(self):
+    def test_equity_return_ratio(self):
         print("test equity total return...")
-        self.assertEqual(round(self.pf.equities['_AAPL'].total_return(), 8), 1.15622159)
+        self.assertEqual(round(self.pf.return_ratio('_AAPL'), 8), 1.15622159)
 
     def test_equity_std(self):
         print("test equity Standard Deviation...")
-        self.assertEqual(round(self.pf.equities['_AAPL'].std(),6), 0.016765)
+        self.assertEqual(round(self.pf.std('_AAPL'),6), 0.016765)
 
     def test_equity_avg_daily_return(self):
         print("test equity daily return...")
-        self.assertEqual(round(self.pf.equities['_AAPL'].avg_daily_return(),8), 0.00074551)
+        self.assertEqual(round(self.pf.avg_daily_return('_AAPL'),8), 0.00074551)
 
     def test_equity_beta(self):
         print("test equity beta...")
-        beta = self.pf.equities['_AAPL'].beta(self.benchmark)
+        beta = self.pf.beta('$SPX', '_AAPL')
         self.assertEqual(round(beta,4), -0.8104)
 
     def test_equity_info_ratio(self):
         print("test equity information ratio...")
-        self.assertEqual(round(self.pf.equities['_AAPL'].info_ratio(self.benchmark), 4), 0.0569)
+        self.assertEqual(round(self.pf.info_ratio('$SPX', tick='_AAPL'), 4), 0.0569)
 
     def test_equity_appraisal_ratio(self):
         print("test equity appraisal ratio...")
-        self.assertEqual(round(self.pf.equities['_AAPL'].appraisal_ratio(self.benchmark), 4), 0.0235)
+        self.assertEqual(round(self.pf.appraisal_ratio('$SPX', tick='_AAPL'), 4), 0.0235)
 
     def test_equity_residual_return(self):
         print("test equity residual return...")
-        self.assertEqual(round(self.pf.equities['_AAPL'].mean_residual_return(self.benchmark), 6), 0.000622)
-
-    def test_equity_avg_daily_return(self):
-        print("test equity average daily return...")
-        self.assertEqual(round(self.pf.equities['_AAPL'].avg_daily_return(), 8), 0.00074551)
-
-    def test_equity_std(self):
-        print("test equity standard deviation...")
-        self.assertEqual(round(self.pf.equities['_AAPL'].std(), 8), 0.01676517)
-
-    def test_equity_sharpe_ratio(self):
-        print("test equity sharpe ratio...")
-        self.assertEqual(round(self.pf.equities['_AAPL'].sharpe_ratio(), 8), 0.0399392)
-
-    def test_equity_info_ratio(self):
-        print("test equity info ratio...")
-        self.assertEqual(round(self.pf.equities['_AAPL'].info_ratio(self.benchmark), 8), 0.05687389)
-
-    def test_equity_appraisal_ratio(self):
-        print("test equity appraisal ratio...")
-        self.assertEqual(round(self.pf.equities['_AAPL'].appraisal_ratio(self.benchmark), 8), 0.02347507)
-
+        self.assertEqual(round(self.pf.mean_residual_return(benchmark='$SPX', tick='_AAPL'), 6), 0.000622)
+ 
 if __name__ == '__main__':
     if 'FINPYDATA' in os.environ:
         tmp_finpydata = os.environ['FINPYDATA']

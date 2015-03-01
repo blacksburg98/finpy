@@ -19,7 +19,7 @@ dt_timeofday = dt.timedelta(hours=16)
 dt_start = date_list[0]     
 dt_end = date_list[-1] 
 tick_set = set([x.tick for x in order_list])
-ls_symbols = []
+ls_symbols = ['$SPX']
 while(tick_set):
     ls_symbols.append(tick_set.pop())
 ldt_timestamps = du.getNYSEdays(dt_start, dt_end, dt_timeofday)
@@ -27,3 +27,4 @@ cash = 1000000
 all_stocks = get_tickdata(ls_symbols=ls_symbols, ldt_timestamps=ldt_timestamps)
 pf = Portfolio(equities=all_stocks, cash=cash, dates=ldt_timestamps, order_list=order_list)
 pf.sim()
+pf.csvwriter(['close','shares'])

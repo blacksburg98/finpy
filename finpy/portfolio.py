@@ -17,7 +17,7 @@ from .fincommon import FinCommon
 import finpy.fpdateutil as du
 from . import utils as ut
 
-class Portfolio(FinCommon):
+class Portfolio():
     def __init__(self, equities, cash, dates, order_list=None):
         """
         Portfolio has three items.
@@ -197,9 +197,13 @@ class Portfolio(FinCommon):
                 daily_rtn.append((total[date]/total[date-1])-1)
         return np.array(daily_rtn)
 
-    def std(self):
+    def avg_daily_return(self, tick=None):
+        " Average of the daily_return list "
+        return np.average(self.daily_return(tick))
+
+    def std(self, tick=None):
         " Standard Deviation of the daily_return "
-        return np.std(self.daily_return())
+        return np.std(self.daily_return(tick))
 
     def normalized(self, tick=None):
         if tick == None:
@@ -216,7 +220,7 @@ class Portfolio(FinCommon):
         daily_rtn = self.daily_return(tick)
         negative_daily_rtn = daily_rtn[daily_rtn < 0]
         sortino_dev = np.std( negative_daily_rtn)
-        sortino = (self.avg_daily_return() / sortino_dev) * np.sqrt(k)
+        sortino = (self.avg_daily_return(tick) / sortino_dev) * np.sqrt(k)
         return sortino
 
     def return_ratio(self, tick=None):
@@ -224,7 +228,7 @@ class Portfolio(FinCommon):
         if tick == None:
             return self.total[-1]/self.total[0]
         else:
-            return self.equities.loc[tick, -1, 'close']/self.equities.loc[tick, 0, 'close']
+            return self.equities[tick]['close'][-1]/self.equities.loc[tick]['close'][0]
 
     def moving_average(self, window=20, tick=None):
         """
@@ -291,37 +295,37 @@ class Portfolio(FinCommon):
 
     def excess_return(self, rf_tick="$TNX", tick=None):
         """
-        An active return is the difference between an asset's return and the riskless rate. 
+        An excess return is the difference between an asset's return and the riskless rate. 
         """
-        return self.daily_return(tick) - ut.riskfree_return(self.ldt_timestamps(), rf_tick="$TNX")
+        return self.daily_return(tick=tick) - ut.riskfree_return(self.ldt_timestamps(), rf_tick=rf_tick)
 
-    def mean_excess_return(self, rf_tick="$TNX"):
-        return np.mean(self.excess_return(rf_tick))
+    def mean_excess_return(self, rf_tick="$TNX", tick=None):
+        return np.mean(self.excess_return(rf_tick=rf_tick, tick=tick))
 
-    def residual_return(self, benchmark, rf_tick="$TNX"):
+    def residual_return(self, benchmark, rf_tick="$TNX", tick=None):
         """
         A residual return is the excess return minus beta times the benchmark excess return.
         """
-        beta = self.beta(benchmark)
-        return  self.excess_return(rf_tick="$TNX") - beta * self.excess_return(rf_tick="$TNX", tick=benchmark)
+        beta = self.beta(benchmark, tick)
+        return  self.excess_return(rf_tick=rf_tick, tick=tick) - beta * self.excess_return(rf_tick=rf_tick, tick=benchmark)
 
-    def mean_residual_return(self, benchmark, rf_tick="$TNX"):
-        return np.mean(self.residual_return(benchmark, rf_tick))
+    def mean_residual_return(self, benchmark, rf_tick="$TNX", tick=None):
+        return np.mean(self.residual_return(benchmark=benchmark, rf_tick=rf_tick, tick=tick))
 
-    def residual_risk(self, benchmark, rf_tick="$TNX"):
+    def residual_risk(self, benchmark, rf_tick="$TNX", tick=None):
         """
         Residual Risk is the standard deviation of the residual return.
         """
-        return np.std(self.residual_return(benchmark, rf_tick))
+        return np.std(self.residual_return(benchmark=benchmark, rf_tick=rf_tick, tick=tick))
 
-    def active_return(self, benchmark):
+    def active_return(self, benchmark, tick=None):
         """
         An active return is the difference between the benchmark and the actual return.
         """
-        return self.daily_return() - self.daily_return(benchmark)
+        return self.daily_return(tick=tick) - self.daily_return(tick=benchmark)
 
-    def mean_active_return(self, benchmark):
-        return np.mean(self.active_return(benchmark))
+    def mean_active_return(self, benchmark, tick=None):
+        return np.mean(self.active_return(benchmark, tick))
 
     def beta_alpha(self, benchmark):
         """
@@ -329,20 +333,33 @@ class Portfolio(FinCommon):
         It can be S&P 500, Russel 2000, or your choice of market indicator.
         This function uses polyfit in numpy to find the closest linear equation.
         """
-        beta, alpha = np.polyfit(self.normalized(benchmark), self.normalized(), 1)
+        beta, alpha = np.polyfit(self.normalized(benchmark=benchmark), self.normalized(), 1)
         return beta, alpha
 
-    def beta(self, benchmark):
+    def beta(self, benchmark, tick=None):
         """
         benchmark is an Equity representing the market. 
         This function uses cov in numpy to calculate beta.
         """
-        benchmark_close = self.normalized(benchmark) 
-        C = np.cov(benchmark_close, self.normalized())/np.var(benchmark_close)
+        benchmark_close = self.normalized(tick=benchmark) 
+        C = np.cov(benchmark_close, self.normalized(tick=tick))/np.var(benchmark_close)
         beta = C[0][1]/C[0][0]
         return beta
 
-    def info_ratio(self, benchmark, rf_tick="$TNX"):
+    def excess_risk(self, rf_tick="$TNX", tick=None):
+        """
+        $FVX is another option. Five-Year treasury rate.
+        An excess risk is the standard deviation of the excess return.
+        """
+        return np.std(self.excess_return(rf_tick=rf_tick, tick=tick))
+
+    def active_risk(self, benchmark, tick=None):
+        """
+        An active risk is the standard deviation of the active return.
+        """
+        return np.std(self.active_return(benchmark, tick))
+
+    def info_ratio(self, benchmark, rf_tick="$TNX", tick=None):
         """
         Information Ratio
         https://en.wikipedia.org/wiki/Information_ratio
@@ -351,9 +368,9 @@ class Portfolio(FinCommon):
         and the return of a selected benchmark index, and active risk is the
         standard deviation of the active return.
         """
-        return self.mean_active_return(benchmark)/self.active_risk(benchmark)
+        return self.mean_active_return(benchmark=benchmark, tick=tick)/self.active_risk(benchmark=benchmark, tick=tick)
 
-    def appraisal_ratio(self, benchmark, rf_tick="$TNX"):
+    def appraisal_ratio(self, benchmark, rf_tick="$TNX", tick=None):
         """
         Appraisal Ratio
         https://en.wikipedia.org/wiki/Appraisal_ratio
@@ -362,7 +379,16 @@ class Portfolio(FinCommon):
         and the return of a selected benchmark index, and residual risk is the
         standard deviation of the residual return.
         """
-        return self.mean_residual_return(benchmark, rf_tick)/self.residual_risk(benchmark, rf_tick)
+        return self.mean_residual_return(benchmark, rf_tick, tick)/self.residual_risk(benchmark, rf_tick, tick)
+
+    def sharpe_ratio(self, rf_tick="$TNX", tick=None):
+        """
+        Return the Original Sharpe Ratio.
+        https://en.wikipedia.org/wiki/Sharpe_ratio
+        rf_tick is Ten-Year treasury rate ticker at Yahoo.
+
+        """
+        return self.mean_excess_return(rf_tick=rf_tick, tick=tick)/self.excess_risk(rf_tick=rf_tick, tick=tick)
 
     def bollinger_band(self, tick, window=20, k=2, mi_only=False):
         """
