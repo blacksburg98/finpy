@@ -16,6 +16,7 @@ from .order import Order
 from .fincommon import FinCommon
 import finpy.fpdateutil as du
 from . import utils as ut
+from finpy.equity import get_tickdata
 
 class Portfolio():
     def __init__(self, equities, cash, dates, order_list=None):
@@ -189,12 +190,8 @@ class Portfolio():
             total = self.total
         else:
             total = self.equities.loc[tick,:,'close']
-        daily_rtn = []
-        for date in range(len(self.ldt_timestamps())):
-            if date == 0:
-                daily_rtn.append(0)
-            else:
-                daily_rtn.append((total[date]/total[date-1])-1)
+        daily_rtn.append((total[date]/total[date-1])-1)
+        daily_rtn[0] = 0
         return np.array(daily_rtn)
 
     def avg_daily_return(self, tick=None):
@@ -390,6 +387,83 @@ class Portfolio():
         """
         return self.mean_excess_return(rf_tick=rf_tick, tick=tick)/self.excess_risk(rf_tick=rf_tick, tick=tick)
 
+    def up_ratio(self, date, tick, days=10):
+        """
+        Return the ratio of the past up days.
+        This function only applies to equities.
+        """
+        ldt_index = self.ldt_timestamps()
+        last = date
+        first = date-days
+        up = 0.0
+        dn = 0.0
+        for i in range(first, last+1):
+            if self.equities[tick]['close'][i] < self.equities[tick]['close'][i-1]:
+                dn += 1
+            else:
+                up += 1
+        ratio = up / (dn + up)
+        return ratio
+
+    def dn_ratio(self, date,tick , days=10):
+        """
+        Return the ratio of the past down days. 
+        This function only applies to equities.
+        """
+        ratio = 1.0 - self.up_ratio(date=date, tick=tick, days=days)
+        return ratio
+
+    def rolling_normalized_stdev(self, tick, window=50):
+        """
+        Return the rolling standard deviation of normalized price.
+        This function only applies to equities.
+        """
+        ldt_timestamps = self.ldt_timestamps()
+        pre_timestamps = ut.pre_timestamps(ldt_timestamps, window)
+        # ldf_data has the data prior to our current interest.
+        # This is used to calculate moving average for the first window.
+        ldf_data = get_tickdata([tick], pre_timestamps)
+        merged_data = pd.concat([ldf_data[tick]['close'], self.equities[tick]['close']])
+        all_timestamps = pre_timestamps + ldt_timestamps
+        merged_daily_rtn = (pf.equities.loc[tick,:,'close'].shift(1)/pf.equities.loc[tick,:,'close']-1)
+        merged_daily_rtn[0] = 0
+        sigma = pd.rolling_std(merged_daily_rtn, window=window)
+        return sigma[self.index]
+
+    def max_rise(self, tick, date, window=20):
+        """
+        Find the maximum change percentage between the current date and the bottom of the retrospective window.
+        This function only applies to equities.
+        """
+        ldt_timestamps = self.index
+        pre_timestamps = ut.pre_timestamps(ldt_timestamps, window)
+        first = pre_timestamps[0]
+        # ldf_data has the data prior to our current interest.
+        # This is used to calculate moving average for the first window.
+        try:
+            self.equties['close'][first]
+            merged_data = self.equties['close']
+        except:
+            ldf_data = get_tickdata([tick], pre_timestamps)
+            merged_data = pd.concat([ldf_data[tick]['close'], self.equties['close']])
+        if(isinstance(date , int)):
+            int_date = ldt_timestamps[date]
+        else:
+            int_date = date
+        c = merged_data.index.get_loc(int_date)
+        m = merged_data[c-window:c].min()
+        r = (merged_data[c]-m)/m
+        return r
+
+    def moving_average(self, tick, window=20):
+        """
+        Return an array of moving average. Window specified how many days in
+        a window.
+        This function only applies to equities.
+        """
+        mi = self.bollinger_band(tick=tick, window=window, mi_only=True)
+        return mi
+
     def bollinger_band(self, tick, window=20, k=2, mi_only=False):
         """
         Return four arrays for Bollinger Band.
@@ -398,6 +472,7 @@ class Portfolio():
         The thrid one is the lower band.
         The fourth one is the Bollinger value.
         If mi_only, then return the moving average only.
+        This function only applies to equities.
         """
         ldt_timestamps = self.ldt_timestamps()
         pre_timestamps = ut.pre_timestamps(ldt_timestamps, window)
