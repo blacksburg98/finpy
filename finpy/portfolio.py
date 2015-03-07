@@ -190,7 +190,7 @@ class Portfolio():
             total = self.total
         else:
             total = self.equities.loc[tick,:,'close']
-        daily_rtn.append((total[date]/total[date-1])-1)
+        daily_rtn = total/total.shift(1)-1
         daily_rtn[0] = 0
         return np.array(daily_rtn)
 
