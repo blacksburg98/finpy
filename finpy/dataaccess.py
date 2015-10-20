@@ -48,6 +48,7 @@ class DataItem (object):
 class DataSource(object):
     NORGATE = "Norgate"
     YAHOO = "Yahoo"
+    GOOGLE = "Google"
     YAHOOold = "YahooOld"
     CUSTOM = "Custom"
     MLT = "ML4Trading"
@@ -115,18 +116,19 @@ class DataAccess(object):
 
             for i in self.folderSubList:
                 self.folderList.append(self.rootdir + self.midPath + i)
-
         elif (sourcein == DataSource.CUSTOM):
             self.source = DataSource.CUSTOM
             self.folderList.append(self.rootdir + "/Processed/Custom/")
-
         elif (sourcein == DataSource.MLT):
             self.source = DataSource.MLT
             self.folderList.append(self.rootdir + "/ML4Trading/")
-
         elif (sourcein == DataSource.YAHOO):
             self.source = DataSource.YAHOO
             self.folderList.append(self.rootdir + "/Yahoo/")
+            self.fileExtensionToRemove = ".csv"
+        elif (sourcein == DataSource.GOOGLE):
+            self.source = DataSource.GOOGLE
+            self.folderList.append(self.rootdir + "/Google/")
             self.fileExtensionToRemove = ".csv"
 
         else:
@@ -201,6 +203,20 @@ class DataAccess(object):
                 else:
                     #incorrect value
                     raise ValueError ("Incorrect value for data_item %s"%sItem)
+            if self.source == DataSource.GOOGLE:
+                if (sItem == DataItem.OPEN):
+                    list_index.append(1)
+                elif (sItem == DataItem.HIGH):
+                    list_index.append (2)
+                elif (sItem ==DataItem.LOW):
+                    list_index.append(3)
+                elif(sItem == DataItem.VOL):
+                    list_index.append(4)
+                elif (sItem == DataItem.CLOSE):
+                    list_index.append(5)
+                else:
+                    #incorrect value
+                    raise ValueError ("Incorrect value for data_item %s"%sItem)
                 #end elif
         #end data_item loop
 
@@ -221,7 +237,16 @@ class DataAccess(object):
                     dir_name = os.path.dirname(file_path) + os.sep
                     if dt_latest < ts_list[-1]:
                         YahooDataPull.get_data(dir_name, [symbol])
-
+                elif self.source == DataSource.GOOGLE:
+                    file_path= self.getPathOfCSVFile(symbol);
+                    if file_path != None:
+                        dt_latest = GoogleDataPull.latest_local(file_path)
+                    else:
+                        file_path = self.rootdir + "/Google/" + symbol + ".csv"
+                        dt_latest = dt.datetime.strptime("1900-1-1", "%Y-%m-%d")
+                    dir_name = os.path.dirname(file_path) + os.sep
+                    if dt_latest < ts_list[-1]:
+                        GoogleDataPull.get_data(dir_name, [symbol])
                 else:
                     file_path= self.getPathOfFile(symbol);
                 
@@ -246,7 +271,7 @@ class DataAccess(object):
             assert( not _file == None or bIncDelist == True )
             ''' Open the file only if we have a valid name, otherwise we need delisted data '''
             if _file != None:
-                if (self.source==DataSource.CUSTOM) or (self.source==DataSource.YAHOO)or (self.source==DataSource.MLT):
+                if (self.source==DataSource.CUSTOM) or (self.source==DataSource.YAHOO)or (self.source==DataSource.MLT) or (self.source == DataSource.GOOGLE):
                     creader = csv.reader(_file)
                     row=next(creader)
                     row=next(creader)
@@ -630,7 +655,6 @@ class DataAccess(object):
             retstr = retstr + "Valid subdirs include: \n"
             for i in self.folderSubList:
                 retstr = retstr + "\t" + i + "\n"
-
         elif (self.source == DataSource.YAHOO):
             retstr = "Yahoo:\n"
             retstr = retstr + "Attempts to load a custom data set, assuming each stock has\n"
@@ -638,7 +662,13 @@ class DataAccess(object):
             retstr = retstr + "everything should be located in QSDATA/Yahoo\n"
             for i in self.folderSubList:
                 retstr = retstr + "\t" + i + "\n"
-
+        elif (self.source == DataSource.GOOGLE):
+            retstr = "Google:\n"
+            retstr = retstr + "Attempts to load a custom data set, assuming each stock has\n"
+            retstr = retstr + "a csv file with the name and first column as the stock ticker,\ date in second column, and data in following columns.\n"
+            retstr = retstr + "everything should be located in QSDATA/Google\n"
+            for i in self.folderSubList:
+                retstr = retstr + "\t" + i + "\n"
         elif (self.source == DataSource.CUSTOM):
             retstr = "Custom:\n"
             retstr = retstr + "Attempts to load a custom data set, assuming each stock has\n"

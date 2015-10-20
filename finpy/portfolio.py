@@ -207,6 +207,10 @@ class Portfolio():
             return self.total/self.total[0]
         else:
             return self.equities[tick]['close']/self.equities[tick]['close'][0]
+    def normalized_price(self, tick):
+        self.equities[tick]['open'] = self.equities[tick]['open'] * self.equities[tick]['close']/self.equities[tick]['actual_close']
+        self.equities[tick]['high'] = self.equities[tick]['high'] * self.equities[tick]['close']/self.equities[tick]['actual_close']
+        self.equities[tick]['low'] = self.equities[tick]['low'] * self.equities[tick]['close']/self.equities[tick]['actual_close']
 
     def sortino(self, k=252, tick=None):
         """
