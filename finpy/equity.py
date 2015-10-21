@@ -17,7 +17,10 @@ from .fincommon import FinCommon
 
 def get_tickdata(ls_symbols, ldt_timestamps, fill=True, df=pd.DataFrame, source="Yahoo"):
     c_dataobj = da.DataAccess(source, cachestalltime=0)
-    ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
+    if source == "Yahoo":
+        ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
+    elif source == "Google":
+        ls_keys = ['open', 'high', 'low', 'close', 'volume']
     ldf_data = c_dataobj.get_data(ldt_timestamps, ls_symbols, ls_keys)
     d_data = dict(list(zip(ls_symbols, ldf_data)))
     if fill == True:
@@ -94,9 +97,10 @@ class Equity(pd.DataFrame, FinCommon):
         return self['close']/self['close'].ix[0]
 
     def normalized_all(self):
-        self['open'] = self['open'] * self['close']/self['actual_close']
-        self['high'] = self['high'] * self['close']/self['actual_close']
-        self['low'] = self['low'] * self['close']/self['actual_close']
+        if 'actual_close' in self:
+            self['open'] = self['open'] * self['close']/self['actual_close']
+            self['high'] = self['high'] * self['close']/self['actual_close']
+            self['low'] = self['low'] * self['close']/self['actual_close']
     def sortino(self, k=252):
         """
         Return Sortino Ratio. 

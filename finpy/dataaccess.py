@@ -23,7 +23,7 @@ import pickle as pkl
 import time
 import datetime as dt
 import tempfile
-from . import YahooDataPull 
+from . import DataPull 
 
 
 class Exchange (object):
@@ -230,23 +230,23 @@ class DataAccess(object):
                 if (self.source == DataSource.CUSTOM) or (self.source == DataSource.MLT)or (self.source == DataSource.YAHOO):
                     file_path= self.getPathOfCSVFile(symbol);
                     if file_path != None:
-                        dt_latest = YahooDataPull.latest_local(file_path)
+                        dt_latest = DataPull.latest_local(file_path)
                     else:
                         file_path = self.rootdir + "/Yahoo/" + symbol + ".csv"
                         dt_latest = dt.datetime.strptime("1900-1-1", "%Y-%m-%d")
                     dir_name = os.path.dirname(file_path) + os.sep
                     if dt_latest < ts_list[-1]:
-                        YahooDataPull.get_data(dir_name, [symbol])
+                        DataPull.get_data(dir_name, [symbol])
                 elif self.source == DataSource.GOOGLE:
                     file_path= self.getPathOfCSVFile(symbol);
                     if file_path != None:
-                        dt_latest = GoogleDataPull.latest_local(file_path)
+                        dt_latest = DataPull.latest_local(file_path)
                     else:
                         file_path = self.rootdir + "/Google/" + symbol + ".csv"
                         dt_latest = dt.datetime.strptime("1900-1-1", "%Y-%m-%d")
                     dir_name = os.path.dirname(file_path) + os.sep
                     if dt_latest < ts_list[-1]:
-                        GoogleDataPull.get_data(dir_name, [symbol])
+                        DataPull.get_data(dir_name, [symbol], src="Google")
                 else:
                     file_path= self.getPathOfFile(symbol);
                 
