@@ -40,9 +40,9 @@ def get_data(data_path, ls_symbols, src="Yahoo"):
                     params = params[:-3]
                 url = "http://ichart.finance.yahoo.com/table.csv?%s" % params
             elif src == "Google":
-                sd = dt_start.strftime("%b %d,%Y")
-                ed = _now.strftime("%b %d,%Y")
-                params= urllib.parse.urlencode ({'startdate':sd,'enddate':ed,'output':'csv','q': symbol})
+                sd = dt_start.strftime("%b %d, %Y")
+                ed = _now.strftime("%b %d, %Y")
+                params= urllib.parse.urlencode ({'q': symbol,'startdate':sd,'enddate':ed,'output':'csv'})
                 url = "http://www.google.com/finance/historical?%s" % params
             print(url)
             url_get= urllib.request.urlopen(url)
