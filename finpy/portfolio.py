@@ -494,3 +494,15 @@ class Portfolio():
             bo['lo'] = bo['mi'] - k * sigma[ldt_timestamps] 
             bo['ba'] = (merged_data[ldt_timestamps] - bo['mi']) / (k * sigma[ldt_timestamps])
             return bo
+
+    def RSI(self, tick):
+        """
+        Relative Strength Index
+        http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:relative_strength_index_rsi
+        """
+        ldt_timestamps = self.ldt_timestamps()
+        pre_timestamps = ut.pre_timestamps(ldt_timestamps, 15)
+        ldf_data = get_tickdata([tick], pre_timestamps)
+        merged_data = pd.concat([ldf_data[tick]['close'], self.equities[tick]['close']])
+        change = merged_data.diff()
+        print(change)
