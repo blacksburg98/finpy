@@ -499,10 +499,27 @@ class Portfolio():
         """
         Relative Strength Index
         http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:relative_strength_index_rsi
+        This function uses roughly 250 prior points to calculate RS.
         """
         ldt_timestamps = self.ldt_timestamps()
-        pre_timestamps = ut.pre_timestamps(ldt_timestamps, 15)
+        pre_timestamps = ut.pre_timestamps(ldt_timestamps, 250)
         ldf_data = get_tickdata([tick], pre_timestamps)
         merged_data = pd.concat([ldf_data[tick]['close'], self.equities[tick]['close']])
-        change = merged_data.diff()
-        print(change)
+        delta = merged_data.diff()
+        gain = pd.Series(delta[delta > 0], index=delta.index).fillna(0)
+        loss = pd.Series(delta[delta < 0], index=delta.index).fillna(0).abs()
+        avg_gain = pd.Series(index=delta.index)
+        avg_loss = pd.Series(index=delta.index)
+        rsi = pd.Series(index=delta.index)
+        avg_gain[14] = gain[1:15].mean()
+        avg_loss[14] = loss[1:15].mean()
+        for i in range(15, len(delta.index)):
+            avg_gain[i] = (avg_gain[i-1]*13+gain[i])/14
+            avg_loss[i] = (avg_loss[i-1]*13+loss[i])/14
+            if avg_loss[i] == 0:
+                rsi[i] = 100
+            else:
+                rs = avg_gain[i]/avg_loss[i]
+                rsi[i] = 100 - 100/(1+rs)
+        print(rsi[ldt_timestamps])
+        return(rsi[ldt_timestamps])
