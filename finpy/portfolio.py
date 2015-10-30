@@ -334,7 +334,7 @@ class Portfolio():
         It can be S&P 500, Russel 2000, or your choice of market indicator.
         This function uses polyfit in numpy to find the closest linear equation.
         """
-        beta, alpha = np.polyfit(self.normalized(benchmark=benchmark), self.normalized(), 1)
+        beta, alpha = np.polyfit(self.normalized(tick=benchmark), self.normalized(), 1)
         return beta, alpha
 
     def beta(self, benchmark, tick=None):
@@ -429,17 +429,17 @@ class Portfolio():
         ldf_data = get_tickdata([tick], pre_timestamps)
         merged_data = pd.concat([ldf_data[tick]['close'], self.equities[tick]['close']])
         all_timestamps = pre_timestamps + ldt_timestamps
-        merged_daily_rtn = (pf.equities.loc[tick,:,'close'].shift(1)/pf.equities.loc[tick,:,'close']-1)
+        merged_daily_rtn = (self.equities.loc[tick,:,'close']/self.equities.loc[tick,:,'close'].shift(1)-1)
         merged_daily_rtn[0] = 0
         sigma = pd.rolling_std(merged_daily_rtn, window=window)
-        return sigma[self.index]
+        return sigma[self.ldt_timestamps()]
 
     def max_rise(self, tick, date, window=20):
         """
         Find the maximum change percentage between the current date and the bottom of the retrospective window.
         This function only applies to equities.
         """
-        ldt_timestamps = self.index
+        ldt_timestamps = self.ldt_timestamps() 
         pre_timestamps = ut.pre_timestamps(ldt_timestamps, window)
         first = pre_timestamps[0]
         # ldf_data has the data prior to our current interest.
@@ -449,7 +449,7 @@ class Portfolio():
             merged_data = self.equties['close']
         except:
             ldf_data = get_tickdata([tick], pre_timestamps)
-            merged_data = pd.concat([ldf_data[tick]['close'], self.equties['close']])
+            merged_data = pd.concat([ldf_data[tick]['close'], self.equities.loc[tick,:,'close']])
         if(isinstance(date , int)):
             int_date = ldt_timestamps[date]
         else:
