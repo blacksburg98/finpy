@@ -10,9 +10,9 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates 
-import finpy.fpdateutil as du
-import finpy.dataaccess as da
-import finpy.utils as ut
+import finpy.utils.fpdateutil as du
+import finpy.data.dataaccess as da
+import finpy.utils.utils as ut
 from .fincommon import FinCommon
 
 def get_tickdata(ls_symbols, ldt_timestamps, fill=True, df=pd.DataFrame, source="Yahoo"):

@@ -5,7 +5,7 @@ blacksburg98@yahoo.com
 Created on April 1, 2013
 """
 import numpy as np
-from . import utils as ut
+from finpy.utils import utils as ut
 class FinCommon():
     """
     This class has some common functions used by both Equity and Portfolio.

@@ -8,7 +8,7 @@ import datetime as dt
 from . import fpdateutil as du
 import numpy as np
 import pandas as pd
-from . import dataaccess as da
+import finpy.data.dataaccess as da
 
 def riskfree_return(ldt_timestamps, rf_tick="$TNX"):
     """

@@ -14,9 +14,9 @@ import matplotlib.dates as mdates
 import csv
 from .order import Order
 from .fincommon import FinCommon
-import finpy.fpdateutil as du
-from . import utils as ut
-from finpy.equity import get_tickdata
+import finpy.utils.fpdateutil as du
+from finpy.utils import utils as ut
+from finpy.financial.equity import get_tickdata
 
 class Portfolio():
     def __init__(self, equities, cash, dates, order_list=None):

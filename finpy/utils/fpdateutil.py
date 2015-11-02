@@ -27,7 +27,7 @@ def _cache_dates():
         # filename = os.environ['QS'] + "/qstkutil/NYSE_dates.txt"
         filename = os.path.join(os.path.dirname(__file__), 'NYSE_dates.txt')
     except KeyError:
-        print("Please be sure you have NYSE_dates.txt in the qstkutil directory")
+        print("Please be sure you have NYSE_dates.txt in the finpy/utils directory")
     with open(filename) as f:
         datestxt = [x.strip('\n') for x in f]
     dates = []
