@@ -3,11 +3,11 @@ import unittest
 import sys
 import csv
 import datetime as dt
-from finpy.equity import get_tickdata
-from finpy.equity import Equity
-from finpy.portfolio import Portfolio
-from finpy.order import Order
-import finpy.fpdateutil as du
+from finpy.financial.equity import get_tickdata
+from finpy.financial.equity import Equity
+from finpy.financial.portfolio import Portfolio
+from finpy.financial.order import Order
+import finpy.utils.fpdateutil as du
 class TestPortfolioFunctions(unittest.TestCase):
     """
     _AAPL, _GOOG, _IBM and _XOM are for testing only.
