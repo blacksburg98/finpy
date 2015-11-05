@@ -21,7 +21,7 @@ class Sim():
     """ Sim class allows easily setup for backtesting algorithm.
     """
     def __init__(self, benchmark_tick="$RUA"):
-    """ 
+        """ 
         :param banchmark_tick: The ticker for the benchmark. 
             $RUA is Russel 3000.
         Instance Variable
@@ -32,7 +32,7 @@ class Sim():
         :var ldt_timestamps: The list contains all transaction dates.
         :var pf: Portfolio from finpy.financial.portfolio.
         :var all_order: The list contains all orders. 
-    """
+        """
         parser = argparse.ArgumentParser( description='My main algorithm.')
         self._default_args(parser)
         self.add_args(parser)
@@ -157,7 +157,12 @@ class Sim():
         pf.cal_total(last_date)
         return pf, stat
     def algo_wrapper(self, tick):
-        """ The wrapper for algo(). Generate various data for 
+        """ The wrapper for algo(). Generate various data for backtesting and viewing.
+            :param tick: The ticker of the security.
+            :return tick: The ticker of the security.
+            :return return_ratio: The return ratio of the algorithm.
+            :return stock_return: The return ratio of the security in the same preriod.
+            :return pf.order: The order of t
         """
         dt_timeofday = dt.timedelta(hours=16)
         equities = get_tickdata(ls_symbols=[tick], ldt_timestamps=self.ldt_timestamps)
@@ -225,6 +230,10 @@ class Sim():
         stock_return = pf.equities[tick]['close'][-1]/pf.equities[tick]['close'][0]
         return (tick, return_ratio, stock_return, pf.order, equities[tick], stat, div, divstd, pie)
     def organize_algo(self, all_res):
+        """ Post Process algo data.
+                :param all_res: all_res is a list contains results from algo.
+                    Each item is the result of the simulation on a security.
+        """
         equities = {}
         stat = {}
         div = {}

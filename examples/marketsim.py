@@ -6,12 +6,12 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates 
 import datetime as dt
 import sets
-from finpy.utils import get_tickdata
-from finpy.equity import Equity
-from finpy.portfolio import Portfolio
-from finpy.order import Order
+from finpy.financial.equity import get_tickdata
+from finpy.financial.equity import Equity
+from finpy.financial.portfolio import Portfolio
+from finpy.financial.order import Order
 
-import QSTK.qstkutil.qsdateutil as du
+import finpy.utils.fpdateutil as du
 if __name__ == '__main__':
     """
     python marketsim.py 1000000 orders.csv values.csv

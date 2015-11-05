@@ -7,7 +7,7 @@ matplotlib.use('Agg') # fix for matplotlib under multiprocessing
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates 
 import datetime as dt
-from finpy.equity import get_tickdata
+from finpy.financial.equity import get_tickdata
 
 import finpy.fpdateutil as du
 if __name__ == '__main__':

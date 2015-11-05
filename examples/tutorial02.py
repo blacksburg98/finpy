@@ -1,10 +1,10 @@
 import csv
 import datetime as dt
-from finpy.equity import get_tickdata
-from finpy.equity import Equity
-from finpy.portfolio import Portfolio
-from finpy.order import Order
-import finpy.fpdateutil as du
+from finpy.financial.equity import get_tickdata
+from finpy.financial.equity import Equity
+from finpy.financial.portfolio import Portfolio
+from finpy.financial.order import Order
+import finpy.utils.fpdateutil as du
 order_list = []
 with open("orders.csv", 'rt', encoding="UTF-8") as csvfile:
     order_reader = csv.reader(csvfile, delimiter=',', skipinitialspace=True)
