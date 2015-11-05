@@ -8,9 +8,6 @@ import datetime as dt
 import pandas as pd
 import numpy as np
 import random 
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates 
 import csv
 from .order import Order
 from .fincommon import FinCommon

@@ -1,15 +1,11 @@
 import sys
 import csv
-import matplotlib
-matplotlib.use('Agg') # fix for matplotlib under multiprocessing
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates 
 import datetime as dt
-import sets
 from finpy.financial.equity import get_tickdata
 from finpy.financial.equity import Equity
 from finpy.financial.portfolio import Portfolio
 from finpy.financial.order import Order
+from dyplot.dygraphs import Dygraphs
 
 import finpy.utils.fpdateutil as du
 if __name__ == '__main__':
@@ -40,7 +36,7 @@ if __name__ == '__main__':
     date_list.sort()
     dt_start = date_list[0]     
     dt_end = date_list[-1] 
-    tick_set = sets.Set([x.tick for x in order_list])
+    tick_set = set([x.tick for x in order_list])
     ls_symbols = ['$SPX']
     while(tick_set):
         ls_symbols.append(tick_set.pop())
@@ -52,21 +48,17 @@ if __name__ == '__main__':
     pf.csvwriter(csv_file=value_file, d=',', cash=False)
     print("Details of the Performance of the portfolio :")
     print("Data Range :",    ldt_timestamps[0],    "to",    ldt_timestamps[-1])
-    print("Sharpe Ratio of Fund :", pf.sharpe()) 
-    print("Sharpe Ratio of $SPX :", pf.equities['$SPX'].sharpe())
-    print("Total Return of Fund :", pf.totalrtn())
-    print(" Total Return of $SPX :", pf.equities['$SPX'].totalrtn())
+    print("Sharpe Ratio of Fund :", pf.sharpe_ratio()) 
+    print("Sharpe Ratio of $SPX :", pf.sharpe_ratio('$SPX'))
+    print("Total Return of Fund :", pf.return_ratio())
+    print(" Total Return of $SPX :", pf.return_ratio('$SPX'))
     print("Standard Deviation of Fund :", pf.std())
-    print(" Standard Deviation of $SPX :", pf.equities['$SPX'].std())
-    print("Average Daily Return of Fund :", pf.avg_dailyrtn())
-    print("Average Daily Return of $SPX :", pf.equities['$SPX'].avg_dailyrtn())
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    pf.equities['$SPX'].plot(ax=ax, ldt_timestamps=ldt_timestamps, column='nml_price')
-    pf.plot(ax=ax, ldt_timestamps=ldt_timestamps)
-    legend = ['S&P 500', "Portfolio"]
-    ax.legend(legend, loc=2)
-    fig.autofmt_xdate()
-    pdf_file = order_file + '.pdf'
-    fig.savefig(pdf_file, format='pdf')
+    print(" Standard Deviation of $SPX :", pf.std('$SPX'))
+    print("Average Daily Return of Fund :", pf.avg_daily_return())
+    print("Average Daily Return of $SPX :", pf.avg_daily_return('$SPX'))
+    dg = Dygraphs(ldt_timestamps, "date")
+    dg.plot(series='S&P 500', mseries=pf.normalized('$SPX'))
+    dg.plot(series='Return', mseries=pf.normalized())
+    dg.set_options(title="Market Sim")
+    dg.savefig(csv_file="marketsim.csv", html_file="marketsim.html")
     
