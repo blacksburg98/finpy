@@ -1,8 +1,7 @@
-from finpy.financial.equity import get_tickdata
+import multiprocessing
 import datetime as dt
 import pandas as pd
 import numpy as np
-import multiprocessing
 import matplotlib.pyplot as plt
 import argparse
 import re
@@ -20,18 +19,10 @@ import os.path
 
 class Sim():
     def __init__(self, benchmark_tick="$RUA"):
-        self.parser = argparse.ArgumentParser( description='My main algorithm.')
-        self.parser.add_argument('-dir', default="app", help="app directory")
-        self.parser.add_argument('-subdir', default="current", help="the subdir under app directory")
-        self.parser.add_argument('-start', default="2000-1-3", help="starting date: default is 2000-1-3")
-        now = dt.datetime.now().strftime("%Y-%m-%d")
-        self.parser.add_argument('-end', default=now, help="ending date: default is now")
-        self.parser.add_argument('-tick', default="short.txt", help="The file contains ticker names to be analyzed")
-        self.parser.add_argument('-cash', default=50000, type=int, help="Initical cash")
-        self.parser.add_argument('-thread', default=multiprocessing.cpu_count(), type=int,
-            help="The number CPU threads used to run. default is the maximum threads of the computer.")
-        self.add_args()
-        self.args = self.parser.parse_args()
+        parser = argparse.ArgumentParser( description='My main algorithm.')
+        self._default_args(parser)
+        self.add_args(parser)
+        self.args = parser.parse_args()
         self.symbols = []
         ticks = open(self.args.tick, 'r')
         csv_file = os.path.join(self.args.dir, 'static', 'csv', self.args.subdir,'tick.csv')
@@ -50,17 +41,41 @@ class Sim():
     def _benchmark(self, ticker):
         bm = get_tickdata(ls_symbols=[ticker], ldt_timestamps=self.ldt_timestamps)
         return(Portfolio(bm, 0, self.ldt_timestamps, []))
-    def add_args(self):
+    def _default_args(self, parser):
+        parser.add_argument('-dir', default="app", help="app directory")
+        parser.add_argument('-subdir', default="current", help="the subdir under app directory")
+        parser.add_argument('-start', default="2000-1-3", help="starting date: default is 2000-1-3")
+        now = dt.datetime.now().strftime("%Y-%m-%d")
+        parser.add_argument('-end', default=now, help="ending date: default is now")
+        parser.add_argument('-tick', default="short.txt", help="The file contains ticker names to be analyzed")
+        parser.add_argument('-cash', default=50000, type=int, help="Initical cash")
+        parser.add_argument('-thread', default=multiprocessing.cpu_count(), type=int,
+            help="The number CPU threads used to run. default is the maximum threads of the computer.")
+
+    def add_args(self, parser):
+        """
+        The user can use the following syntax to
+        overload the method and expand the command line arguments.
+        parser.add_argument('-max_hold', default=190, type=int,
+            help="Maximum holding days")
+        """
         pass
     def run_algo(self):
+        """
+        run_algo has two steps.
+        The first is to run algo_wrapper.
+        If thread is greater than 1, then multiple threads are fire.
+        Each thread runs the algorithm defined in algo() on one stock.
+        Then call organize_algo() to post process the results for backtesting.
+        """
         all_res = []
-        # all_res is a list of all returned objects of algo_output.
+        # all_res is a list of all returned objects of algo_wrapper.
         # The returned object is a set.
         # return (tick, return_ratio, stock_return, pf.order, equities[tick], stat, last)
 # Single-Process Code
         if self.args.thread == 1:
             for tick in self.symbols:
-                all_res.append(self.algo_output(tick))
+                all_res.append(self.algo_wrapper(tick))
 # End Single-Process Code
 # Multi-Process Code
         else:
@@ -68,115 +83,70 @@ class Sim():
                 all_res.append(x)
             # Setting up the number of pool equal to the number of CPU counts
             thread_num = self.args.thread
-            po = multiprocessing.Pool(thread_num)
+            pool = multiprocessing.Pool(thread_num)
             for tick in self.symbols:
-                po.apply_async(self.algo_output, args=(tick),
-                    callback=append_result)
-            po.close()
-            po.join()
+                res = pool.apply_async(self.algo_wrapper, args=(tick, ))
+                all_res.append(res.get())
+            pool.close()
+            pool.join()
 # End Multi-Process Code
         all_res.sort(key=lambda x: x[1], reverse=True)
         return(self.organize_algo(all_res))
-    def individual_algo(self, equities, tick):
-        buy_ratio = self.args.buy_ratio
-        sell_ratio = self.args.sell_ratio
-        fail_ratio = self.args.fail_ratio
-        days_of_window = self.args.days_of_window
-        cash = self.args.cash
-        safe_guard = self.args.safe_guard
-        max_hold = self.args.max_hold
+    def algo(self, equities, tick):
+        """
+        Return two variables. The user can overload the method. 
+        pf: pf has all the price information by usring the algorithm.
+        stat: stat is a list of Transaction items.
+        The default algo is just looking at Bollinger band.
+        If the closing price is lower than the lower band, then buy the stock.
+        If the closing price is higher than the higher band, then sell the stock.
+        """
         ldt_timestamps = self.ldt_timestamps
+        cash = self.args.cash
         pf = Portfolio(equities, cash, ldt_timestamps, [])
         mode = "buy"
+        last_buy = {}
         last_buy_close = 0
-        winner = False
-        last = {}
         stat = []
         i = 0
         close = pf.equities[tick]['close']
-        stdev = pf.rolling_normalized_stdev(tick)
-        start_buy_window = 0
+        ba = pf.bollinger_band(tick=tick)
         while i < len(ldt_timestamps):
             if mode == "buy":
-                for j in range(1, days_of_window):
-                    if i+j < len(close ):
-                        if close[i+j-1]/close[i+j] < buy_ratio and safe_guard == True:
-                            i += j
-                            start_buy_window = i
-                            break
-                        if (buy_ratio*close[i] > close[i+j]): 
-                            pf.cal_total(ldt_timestamps[i+j])
-                            shares = np.floor(pf.cash[i+j]/close[i+j])
-                            print("Buy", shares, " of ", tick, " at ", pf.equities[tick]['close'][i+j], \
-                                " on ", ldt_timestamps[i+j])
-                            s = Transaction(buy_date=i+j, buy_price=close[i+j])
-                            stat.append(s)
-                            pf.buy(date=ldt_timestamps[i+j], shares=shares,
-                                tick=tick, price=close[i+j], update_ol=True)
-                            last_buy_close = close[i+j]
-                            max_buy_close = close[i+j]
-                            mode = "sell"
-                            last['target'] = close[i+j]
-                            last['max'] =  close[i]
-                            last['date'] = close.index[i]
-                            i += j
-                            start_buy_window = i
-                            break
-                i += 1
-            else: # Sell Mode
-                while not (((close[i] < last_buy_close * 1.2) and \
-                              ((close[i] > last_buy_close * sell_ratio) \
-                               and ((pf.max_rise(tick, i, 20) < 0.1) \
-                                  and (pf.max_rise(tick, i, 40) < 0.2)))) \
-                           or ((close[i] >= last_buy_close * 1.2) and  \
-                               ((pf.max_rise(tick, i, 20) < 0.1) \
-                                  and (pf.max_rise(tick, i, 40) < 0.2)) and \
-                               (close[i] < np.max(close[start_buy_window:i])-last_buy_close*0.04)) \
-                           or (close[i] < last_buy_close * fail_ratio) \
-                           or (i-start_buy_window > max_hold and close[i] > last_buy_close and close[i] < last_buy_close * sell_ratio)):
-                    i += 1
-                    if i < len(close) and close[i] > max_buy_close:
-                        max_buy_close = close[i]
-                    if i < len(close):    
-                        continue
-                    else:
-                        break
-                else:
-                    print("Up Ratio", pf.up_ratio(date=i, tick=tick)) 
+                if close[i] <= ba['lo'][i]:
+                    pf.cal_total(ldt_timestamps[i])
+                    shares = np.floor(pf.cash[i]/close[i])
+                    print("Buy", shares, " of ", tick, " at ", close[i], " on ", ldt_timestamps[i])
+                    s = Transaction(buy_date=i, buy_price=close[i])
+                    stat.append(s)
+                    pf.buy(date=ldt_timestamps[i], shares=shares,
+                        tick=tick, price=close[i], update_ol=True)
+                    last_buy_close = close[i]
+                    mode = "sell"
+            else:
+                if close[i] > ba['hi'][i]:
                     update_to = ldt_timestamps[i]
                     pf.cal_total(update_to)
                     shares = pf.equities[tick]['shares'][update_to]
-                    print("Sell", shares, " of ", tick, " at ", pf.equities[tick]['close'][i], \
-                        " on ", ldt_timestamps[i])
+                    print("Sell", shares, " of ", tick, " at ", close[i], " on ", ldt_timestamps[i])
                     stat[-1].sell_date = i
                     stat[-1].sell_price = close[i]
                     pf.sell(date=ldt_timestamps[i], tick=tick, shares=shares, price=close[i], update_ol=True)
                     mode = "buy"
-                    i += 1
-                    start_buy_window = i
+            i += 1
         last_date = ldt_timestamps[-1]
-        last['close'] = pf.equities[tick]['close'][-1]
-        if mode == "buy":
-            if start_buy_window != len(pf.equities[tick]['close']):
-                close_lst = pf.equities[tick]['close'][start_buy_window:]
-                last['target'] = buy_ratio * np.amax(close_lst)
-                last['max'] =  np.amax(close_lst)
-                try:
-                    last['date'] = close_lst.index[close_lst.argmax()]
-                except:
-                    last['date'] = close_lst.argmax()
         pf.cal_total(last_date)
-        csvfile = os.path.join(self.args.dir, 'static', 'csv', self.args.subdir, tick + ".csv")
-        pf.csvwriter(equity_col=["shares", "close"], csv_file=csvfile, \
-            total=True, cash=True, d=',')
-        order_csv = os.path.join(self.args.dir, 'static', 'csv', self.args.subdir, tick + "_order.csv")
-        pf.write_order_csv(csv_file=order_csv)
-        return pf, stat, last, stdev
-    def algo_output(self, tick):
+        return pf, stat
+    def algo_wrapper(self, tick):
         dt_timeofday = dt.timedelta(hours=16)
         equities = get_tickdata(ls_symbols=[tick], ldt_timestamps=self.ldt_timestamps)
-        pf, stat, last, stdev = self.individual_algo(equities=equities, tick=tick)
+        pf, stat = self.algo(equities=equities, tick=tick)
         # Prepare Data for vaiour charts and diagrams
+        csvfile = os.path.join(self.args.dir, 'static', 'csv', self.args.subdir,tick + '.csv')
+        pf.csvwriter(equity_col=["shares", "close"], csv_file=csvfile, total=True, cash=True, d=',')
+        csvfile = os.path.join(self.args.dir, 'static', 'csv', self.args.subdir,tick + '_order.csv')
+        pf.write_order_csv(csv_file=csvfile)
+        stdev = pf.rolling_normalized_stdev(tick)
         market_nml = self.benchmark.normalized(self.benchmark_tick)
         market_dygraph = ";" + market_nml.map(str) + ";" 
         tick_nml = pf.normalized(tick) 
@@ -193,7 +163,7 @@ class Sim():
         dg = Dygraphs(tick_nml.index, "date")
         dg.plot(series=tick, mseries = tick_nml, lseries = ba_lo_nml, hseries = ba_hi_nml)
         dg.plot(series=algo, mseries = total_nml)
-        dg.plot(series="Russel 3000", mseries = market_nml)
+        dg.plot(series=self.benchmark_tick, mseries = market_nml)
         for o in pf.order:
             text = tick + '@' + str(pf.equities[tick]['close'][o.date]) + ' on ' \
                 + o.date.strftime("%Y-%m-%d")
@@ -232,7 +202,7 @@ class Sim():
             pie = gpie.savefig(div_id=div_id, js_vid=js_vid)
         return_ratio = pf.return_ratio()
         stock_return = pf.equities[tick]['close'][-1]/pf.equities[tick]['close'][0]
-        return (tick, return_ratio, stock_return, pf.order, equities[tick], stat, div, divstd, pie, last)
+        return (tick, return_ratio, stock_return, pf.order, equities[tick], stat, div, divstd, pie)
     def organize_algo(self, all_res):
         equities = {}
         stat = {}
@@ -240,18 +210,10 @@ class Sim():
         divstd = {}
         pie = {}
         summary = '<table class="table table-bordered">\n'
-        summary += "<th>Ticker</th><th>Algo Return</th><th>Stock Return</th><th>Close</th><th>Buy Target</th>"
-        summary += "<th>Target Base</th><th>Traget Base Date</th>"
+        summary += "<th>Ticker</th><th>Algo Return</th><th>Stock Return</th>"
         for y in all_res:
-            s = y[-1]
-            if s['close'] <= s['target']: 
-                tr_class = "success"
-            elif s['close'] < s['target'] * 1.025 : 
-                tr_class = "warning"
-            else:
-                tr_class = ""
-            summary += "<tr class=\"%s\">\n" %(tr_class)
-            summary += "<td><a href=\"%s.html\">%s</a></td><td>%f</td><td>%f</td><td>%f</td><td>%f</td><td>%f</td><td>%s</td>\n" %(y[0], y[0],y[1],y[2],s['close'],s['target'], s['max'], s['date'])
+            summary += "<tr>\n" 
+            summary += "<td><a href=\"%s.html\">%s</a></td><td>%f</td><td>%f</td>\n" %(y[0], y[0],y[1],y[2])
             summary += "</tr>\n"
             self.all_order.extend(y[3])
             equities[y[0]] = y[4]
