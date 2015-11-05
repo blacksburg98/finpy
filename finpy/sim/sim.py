@@ -18,7 +18,21 @@ import urllib.parse as urlparse
 import os.path
 
 class Sim():
+    """ Sim class allows easily setup for backtesting algorithm.
+    """
     def __init__(self, benchmark_tick="$RUA"):
+    """ 
+        :param banchmark_tick: The ticker for the benchmark. 
+            $RUA is Russel 3000.
+        Instance Variable
+        :var args: Command Line Arguement. Use argparse.
+        :var symbols: All stock tickers in the simulation.
+        :var dt_start: Backtesting start date.
+        :var dt_end: Backtesting end date.
+        :var ldt_timestamps: The list contains all transaction dates.
+        :var pf: Portfolio from finpy.financial.portfolio.
+        :var all_order: The list contains all orders. 
+    """
         parser = argparse.ArgumentParser( description='My main algorithm.')
         self._default_args(parser)
         self.add_args(parser)
@@ -56,8 +70,9 @@ class Sim():
         """
         The user can use the following syntax to
         overload the method and expand the command line arguments.
-        parser.add_argument('-max_hold', default=190, type=int,
-            help="Maximum holding days")
+            :param parser: 
+                parser.add_argument('-max_hold', default=190, type=int,
+                help="Maximum holding days")
         """
         pass
     def run_algo(self):
@@ -67,6 +82,7 @@ class Sim():
         If thread is greater than 1, then multiple threads are fire.
         Each thread runs the algorithm defined in algo() on one stock.
         Then call organize_algo() to post process the results for backtesting.
+            :return self.organize_algo(all_res):
         """
         all_res = []
         # all_res is a list of all returned objects of algo_wrapper.
@@ -94,10 +110,13 @@ class Sim():
         return(self.organize_algo(all_res))
     def algo(self, equities, tick):
         """
-        Return two variables. The user can overload the method. 
-        pf: pf has all the price information by usring the algorithm.
-        stat: stat is a list of Transaction items.
-        The default algo is just looking at Bollinger band.
+        The user can overload the method to define his own algorithm. 
+            :param equities: The return value of  get_tickdata.
+                get_tickdata(ls_symbols=[tick], ldt_timestamps=self.ldt_timestamps)
+            :param tick: The stock ticker.
+            :return pf: pf has all the price information by usring the algorithm.
+            :return stat: stat is a list of Transaction items.
+        The default algorithm is just looking at Bollinger band.
         If the closing price is lower than the lower band, then buy the stock.
         If the closing price is higher than the higher band, then sell the stock.
         """
@@ -138,6 +157,8 @@ class Sim():
         pf.cal_total(last_date)
         return pf, stat
     def algo_wrapper(self, tick):
+        """ The wrapper for algo(). Generate various data for 
+        """
         dt_timeofday = dt.timedelta(hours=16)
         equities = get_tickdata(ls_symbols=[tick], ldt_timestamps=self.ldt_timestamps)
         pf, stat = self.algo(equities=equities, tick=tick)
