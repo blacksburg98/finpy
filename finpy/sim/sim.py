@@ -101,8 +101,7 @@ class Sim():
             thread_num = self.args.thread
             pool = multiprocessing.Pool(thread_num)
             for tick in self.symbols:
-                res = pool.apply_async(self.algo_wrapper, args=(tick, ))
-                all_res.append(res.get())
+                pool.apply_async(self.algo_wrapper, args=(tick, ), callback=append_result)
             pool.close()
             pool.join()
 # End Multi-Process Code
