@@ -16,15 +16,15 @@ from finpy.utils import utils as ut
 from finpy.financial.equity import get_tickdata
 
 class Portfolio():
+    """
+    Portfolio has three items.
+    equities is a dictionay of Equity instances. 
+    Reference by ticker. self.equities['AAPL']
+    cash is a pandas series with daily cash balance.
+    total is the daily balance.
+    order_list is a list of Order
+    """
     def __init__(self, equities, cash, dates, order_list=None):
-        """
-        Portfolio has three items.
-        equities is a dictionay of Equity instances. 
-        Reference by ticker. self.equities['AAPL']
-        cash is a pandas series with daily cash balance.
-        total is the daily balance.
-        order_list is a list of Order
-        """
         self.equities = pd.Panel(equities)
         if order_list == None:
             self.order = []
