@@ -19,13 +19,15 @@ class Portfolio():
     def __init__(self, equities, cash, dates, order_list=None):
         """
         Portfolio has three items.
-        equities is a dictionay of Equity instances. 
         Reference by ticker. self.equities['AAPL']
         cash is a pandas series with daily cash balance.
         total is the daily balance.
         order_list is a list of Order
         """
         self.equities = pd.Panel(equities)
+        """
+            :var equities: is a Panel of equities.
+        """ 
         if order_list == None:
             self.order = []
         else:
@@ -40,7 +42,12 @@ class Portfolio():
         self.total[0] = self.dailysum(dates[0])
 
     def dailysum(self, date):
-        " Calculate the total balance of the date."
+        """
+        Calculate the total balance of the date.
+
+            :param date: the date to calculate the sum.
+            :return total: the balance of the portfolio on the date.
+        """
         equities_total = np.nansum(self.equities.loc[:,date,'shares'] * self.equities.loc[:,date,'close'])
         total = equities_total + self.cash[date]
         return total
@@ -49,7 +56,13 @@ class Portfolio():
         """
         Portfolio Buy 
         Calculate total, shares and cash upto the date.
-        Before we buy, we need to update share numbers. "
+        Before we buy, we need to update share numbers.
+            
+            :param shares: The number of shares.
+            :param tick: The ticker 
+            :param price: The price of purchase.
+            :param date: The transaction date.
+            :param update_ol: True to update the order list of the portfolio.
         """
         self.cal_total(date)
         last_valid = self.equities.loc[tick,:,'shares'].last_valid_index()
@@ -64,6 +77,12 @@ class Portfolio():
         """
         Portfolio sell 
         Calculate shares and cash upto the date.
+            
+            :param shares: The number of shares.
+            :param tick: The ticker 
+            :param price: The price of purchase.
+            :param date: The transaction date.
+            :param update_ol: True to update the order list of the portfolio.
         """
         self.cal_total(date)
         last_valid = self.equities.loc[tick,:,'shares'].last_valid_index()
@@ -75,7 +94,9 @@ class Portfolio():
             self.order.append(Order(action="sell", date=date, tick=tick, shares=shares, price=self.equities[tick]['close'][date]))
 
     def fillna_cash(self, date):
-        " fillna on cash up to date "
+        """ 
+        fillna on cash up to date.
+        """
         update_start = self.cash.last_valid_index()
         update_end = date
         self.cash[update_start:update_end] = self.cash[update_start]
@@ -83,8 +104,11 @@ class Portfolio():
 
     def fillna(self, date):
         """
-        fillna cash and all equities.
+        fillna cash and all equities up to the date.
         return update_start and update_end.
+            
+            :param date: The last date to fillna.
+            :return 
         """
         update_start, update_end = self.fillna_cash(date)
         for tick in self.equities:
