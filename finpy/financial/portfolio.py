@@ -16,16 +16,19 @@ from finpy.utils import utils as ut
 from finpy.financial.equity import get_tickdata
 
 class Portfolio():
-    """
-    Portfolio has three items.
-    equities is a dictionay of Equity instances. 
-    Reference by ticker. self.equities['AAPL']
-    cash is a pandas series with daily cash balance.
-    total is the daily balance.
-    order_list is a list of Order
-    """
     def __init__(self, equities, cash, dates, order_list=None):
+        """
+        Portfolio has three items.
+        equities is a dictionay of Equity instances. 
+        Reference by ticker. self.equities['AAPL']
+        cash is a pandas series with daily cash balance.
+        total is the daily balance.
+        order_list is a list of Order
+        """
         self.equities = pd.Panel(equities)
+        """
+            :var equities: is a Panel of equities.
+        """ 
         if order_list == None:
             self.order = []
         else:
@@ -497,6 +500,8 @@ class Portfolio():
         Relative Strength Index
         http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:relative_strength_index_rsi
         This function uses roughly 250 prior points to calculate RS.
+
+            :param tick: The ticker to calculate RSI
         """
         ldt_timestamps = self.ldt_timestamps()
         pre_timestamps = ut.pre_timestamps(ldt_timestamps, 250)

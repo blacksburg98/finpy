@@ -1,7 +1,6 @@
 """
 (c) 2013 Tsung-Han Yang
 This source code is released under the Apache license.  
-blacksburg98@yahoo.com
 Created on April 1, 2013
 """
 import datetime as dt
@@ -16,6 +15,13 @@ import finpy.utils.utils as ut
 from .fincommon import FinCommon
 
 def get_tickdata(ls_symbols, ldt_timestamps, fill=True, df=pd.DataFrame, source="Yahoo"):
+    """
+        To get all price data of all tickers in ls_symbols within the list of ldt_timestamps
+        :param ls_symbols: A list with all tickers
+        :param ldt_timestamps: A list with all trading days within the time frame.
+        :param fill: Whether to fill invalid data. Default is True.
+        :param source: "Yahoo" or "Google"
+    """
     c_dataobj = da.DataAccess(source, cachestalltime=0)
     if source == "Yahoo":
         ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
@@ -41,6 +47,7 @@ class Equity(pd.DataFrame, FinCommon):
     If buy is a floating number, then we buy the number of shares of the equity.
     sell is either a NaN, or a floating number.
     shares is the daily balance of the equities.
+    This class is deprecated because of performance degrading.
     """
     def __init__(self, data=None, index=None, columns=None, dtype=None, copy=False, init_share=0.0):
         if columns == None:

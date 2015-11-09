@@ -12,7 +12,10 @@ class FinCommon():
     This is an abstract class.
     """
     def avg_daily_return(self):
-        " Average of the daily_return list "
+        """ 
+        Average of the daily_return list 
+            :return np.average(self.daily_return()):
+        """
         return np.average(self.daily_return())
 
     def beta_alpha(self, benchmark):
@@ -20,6 +23,8 @@ class FinCommon():
         benchmark is an Equity representing the market. 
         It can be S&P 500, Russel 2000, or your choice of market indicator.
         This function uses polyfit in numpy to find the closest linear equation.
+            :return beta:
+            :return alpha:
         """
         beta, alpha = np.polyfit(benchmark.normalized(), self.normalized(), 1)
         return beta, alpha
