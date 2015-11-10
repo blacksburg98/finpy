@@ -344,8 +344,8 @@ class Sim():
 #         ax.hist(hp, 10)
 #         svg_file = os.path.join(self.args.dir, 'static', 'img', self.args.subdir,'fund_hist.svg')
 #         fig.savefig(svg_file, format='svg')
-        ghist = Hist(hp, width=600, height=400)
-        fundhist = ghist.savefig(div_id="fund_hist", js_vid="fundhist")
+        ghist = Hist(hp, xlabel="holding days", width=600, height=400)
+        fundhist = ghist.savefig(div_id="fund_hist", js_vid="fundhist", width=600, height=400)
         if succ+fail != 0:
             succ_frac = succ*100/(succ+fail)
             fail_frac = fail*100/(succ+fail)
