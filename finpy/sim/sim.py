@@ -13,7 +13,8 @@ from finpy.financial.portfolio import Portfolio
 from finpy.financial.transaction import Transaction
 import finpy.utils.fpdateutil as du
 from dyplot.dygraphs import Dygraphs
-from dyplot.c3.pie import Pie
+from dyplot.pie import Pie
+from dyplot.hist import Hist
 import urllib.parse as urlparse
 import os.path
 
@@ -194,20 +195,20 @@ class Sim():
                 + o.date.strftime("%Y-%m-%d")
             dg.annotate(tick, o.date.strftime("%Y-%m-%d"), o.action[0].upper(), text)
         csv_file = os.path.join(self.args.dir, 'static', 'csv', self.args.subdir, tick + "_dygraph.csv")
-        url_path = "/static/csv/" + self.args.subdir + "/" + tick + "_dygraph.csv"
+        csv_url = "/static/csv/" + self.args.subdir + "/" + tick + "_dygraph.csv"
         div_id = "id0"
         js_vid = 'dyg' 
         dg.set_options(title=tick, ylabel="Ratio")
         dg.set_axis_options("x", drawAxis = False)
-        div = dg.savefig(csv_file=csv_file, div_id=div_id, js_vid=js_vid, dt_fmt="%Y-%m-%d", url_path=url_path)
+        div = dg.savefig(csv_file=csv_file, div_id=div_id, js_vid=js_vid, dt_fmt="%Y-%m-%d", csv_url=csv_url)
         gstd = Dygraphs(self.ldt_timestamps, "date")
         gstd.plot(series=tick, mseries= stdev)
         csv_file = os.path.join(self.args.dir, 'static', 'csv', self.args.subdir, tick + "_std.csv")
-        url_path = "/static/csv/" + self.args.subdir + "/" + tick + "_std.csv"
+        csv_url = "/static/csv/" + self.args.subdir + "/" + tick + "_std.csv"
         div_id = "id1"
         js_vid = 'std' 
         gstd.set_options(ylabel="Volatility", digitsAfterDecimal="4", height=120)
-        divstd = gstd.savefig(csv_file=csv_file, div_id=div_id, js_vid=js_vid, dt_fmt="%Y-%m-%d", height="100ptx", url_path=url_path)
+        divstd = gstd.savefig(csv_file=csv_file, div_id=div_id, js_vid=js_vid, dt_fmt="%Y-%m-%d", height="100ptx", csv_url=csv_url)
         fail = 0
         succ = 0
         pie = ""
@@ -322,8 +323,8 @@ class Sim():
         div_id = "fund_graphdiv"
         js_vid = 'gfund'
         dg.set_options(title="Fund Performance")
-        url_path = "/static/csv/" + self.args.subdir + "/" + "fund_dygraph.csv"
-        fund_graph = dg.savefig(csv_file=csv_file, div_id=div_id, js_vid=js_vid, dt_fmt="%Y-%m-%d", url_path=url_path)
+        csv_url = "/static/csv/" + self.args.subdir + "/" + "fund_dygraph.csv"
+        fund_graph = dg.savefig(csv_file=csv_file, div_id=div_id, js_vid=js_vid, dt_fmt="%Y-%m-%d", csv_url=csv_url)
         return output, fund_graph
     def sim_output(self, output, fund_graph, stat, div, divstd, pie, summary):
         succ = 0
@@ -338,16 +339,16 @@ class Sim():
                     else:
                         fail += 1
         hp = pd.Series(hold_period)
-        fig = plt.figure()
-        ax = fig.add_subplot(111, title="Holding Period Distribution")
-        ax.hist(hp, 10)
-        svg_file = os.path.join(self.args.dir, 'static', 'img', self.args.subdir,'fund_hist.svg')
-        fig.savefig(svg_file, format='svg')
+#         fig = plt.figure()
+#         ax = fig.add_subplot(111, title="Holding Period Distribution")
+#         ax.hist(hp, 10)
+#         svg_file = os.path.join(self.args.dir, 'static', 'img', self.args.subdir,'fund_hist.svg')
+#         fig.savefig(svg_file, format='svg')
+        ghist = Hist(hp, width=600, height=400)
+        fundhist = ghist.savefig(div_id="fund_hist", js_vid="fundhist")
         if succ+fail != 0:
             succ_frac = succ*100/(succ+fail)
             fail_frac = fail*100/(succ+fail)
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
             labels = 'Success', 'Fail'
             gpie = Pie([succ_frac, fail_frac], labels=labels)
             fundpie = gpie.savefig(div_id="fund_pie", js_vid="piefund")
@@ -412,8 +413,7 @@ class Sim():
                 """)
                 t.write("{% endblock %}")
             f.write(fundpie)
-            hist_svg = '<embed src="/static/img/' + self.args.subdir + '/fund_hist.svg" type="image/svg+xml" />\n'
-            f.write(hist_svg)
+            f.write(fundhist)
             for sym in self.symbols:
                 tick_html = os.path.join(self.args.dir, 'templates', self.args.subdir, sym + '.html')
                 with open(tick_html , 'w') as h:
