@@ -339,13 +339,8 @@ class Sim():
                     else:
                         fail += 1
         hp = pd.Series(hold_period)
-#         fig = plt.figure()
-#         ax = fig.add_subplot(111, title="Holding Period Distribution")
-#         ax.hist(hp, 10)
-#         svg_file = os.path.join(self.args.dir, 'static', 'img', self.args.subdir,'fund_hist.svg')
-#         fig.savefig(svg_file, format='svg')
-        ghist = Hist(hp, xlabel="holding days", width=600, height=400)
-        fundhist = ghist.savefig(div_id="fund_hist", js_vid="fundhist", width=600, height=400)
+        ghist = Hist(hp, xlabel="holding days", width="600px", height="400px")
+        fundhist = ghist.savefig(div_id="fund_hist", js_vid="fundhist", width="600px", height="400px")
         if succ+fail != 0:
             succ_frac = succ*100/(succ+fail)
             fail_frac = fail*100/(succ+fail)
@@ -356,7 +351,6 @@ class Sim():
         with open(index_file, 'w') as f:
             f.write('{% extends "base.html" %}\n{% block content %}\n')
             f.write(fund_graph)
-            f.write('<embed src="/static/img/' + self.args.subdir + '/fund_scatter.svg" type="image/svg+xml" /><br>\n')
             statement = "The final value of the portfolio using the sample file is %s<br>\n" %(self.pf.total[-1])
             statement += "Details of the Performance of the portfolio :<br>\n"
             statement += "Data Range : %s to %s<br>\n" %(self.ldt_timestamps[0], self.ldt_timestamps[-1])
@@ -371,17 +365,6 @@ class Sim():
             statement += "Average Daily Return of $RUA : %s<br>\n" %( self.pf.avg_daily_return(tick=self.benchmark_tick))
             statement += "Information Ratio of Fund: %s<br>\n" %( self.pf.info_ratio(benchmark=self.benchmark_tick))
             beta, alpha = self.pf.beta_alpha(benchmark=self.benchmark_tick)
-            fig = plt.figure()
-            ax = fig.add_subplot(111, title="Func vs Benchmark Scatter Plot")
-            benchmark_close = self.benchmark.normalized(self.benchmark_tick) 
-            ax.scatter(benchmark_close, self.pf.total/self.pf.total[0])
-            xmin = round(np.amin(benchmark_close), 2) 
-            xmax = round(np.amax(benchmark_close), 2) 
-            x = np.arange(xmin, xmax, 0.01)
-            y = beta * x + alpha
-            ax.plot(x, y)
-            svg_file = os.path.join(self.args.dir, 'static', 'img', self.args.subdir, 'fund_scatter.svg')
-            fig.savefig(svg_file, format='svg')
             beta = self.pf.beta(benchmark='$RUA')
             statement += "beta of the fund is %s. <br>\n" %(beta)
             statement += "Active Return of the fund is %s<br>\n" %(self.pf.mean_active_return(benchmark=self.benchmark_tick))

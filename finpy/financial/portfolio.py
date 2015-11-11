@@ -16,15 +16,15 @@ from finpy.utils import utils as ut
 from finpy.financial.equity import get_tickdata
 
 class Portfolio():
+    """
+    Portfolio has three items.
+    equities is a panda Panel of equity data. 
+    Reference by ticker. self.equities['AAPL']
+    cash is a pandas series with daily cash balance.
+    total is the daily balance.
+    order_list is a list of Order
+    """
     def __init__(self, equities, cash, dates, order_list=None):
-        """
-        Portfolio has three items.
-        equities is a dictionay of Equity instances. 
-        Reference by ticker. self.equities['AAPL']
-        cash is a pandas series with daily cash balance.
-        total is the daily balance.
-        order_list is a list of Order
-        """
         self.equities = pd.Panel(equities)
         """
             :var equities: is a Panel of equities.
@@ -437,7 +437,13 @@ class Portfolio():
     def max_rise(self, tick, date, window=20):
         """
         Find the maximum change percentage between the current date and the bottom of the retrospective window.
-        This function only applies to equities.
+
+            :param tick: ticker
+            :type tick: string
+            :param date: date to calculate max_rise
+            :type date: datetime
+            :param window: The days of window to calculate max_rise.
+            :type window: int
         """
         ldt_timestamps = self.ldt_timestamps() 
         pre_timestamps = ut.pre_timestamps(ldt_timestamps, window)
@@ -463,20 +469,30 @@ class Portfolio():
         """
         Return an array of moving average. Window specified how many days in
         a window.
-        This function only applies to equities.
+
+            :param tick: ticker
+            :type tick: string
+            :param window: The days of window to calculate moving average.
+            :type window: int
         """
         mi = self.bollinger_band(tick=tick, window=window, mi_only=True)
         return mi
 
     def bollinger_band(self, tick, window=20, k=2, mi_only=False):
         """
-        Return four arrays for Bollinger Band.
-        The first one is the moving average.
-        The second one is the upper band.
-        The thrid one is the lower band.
-        The fourth one is the Bollinger value.
-        If mi_only, then return the moving average only.
-        This function only applies to equities.
+        Return four arrays for Bollinger Band. The upper band at k times an N-period
+        standard deviation above the moving average. The lower band at k times an N-period
+        below the moving average.
+
+            :param tick: ticker
+            :type tick: string
+            :param window: The days of window to calculate Bollinger Band.
+            :type window: int
+            :param k: k * 
+            :return bo: bo['mi'] is the moving average. bo['lo'] is the lower band.
+               bo['hi'] is the upper band. bo['ba'] is a seris of the position of the current 
+               price relative to the bollinger band.
+            :type bo: A dictionary of series.
         """
         ldt_timestamps = self.ldt_timestamps()
         pre_timestamps = ut.pre_timestamps(ldt_timestamps, window)
@@ -502,6 +518,8 @@ class Portfolio():
         This function uses roughly 250 prior points to calculate RS.
 
             :param tick: The ticker to calculate RSI
+            :type tick: string
+            :return rsi[ldt_timestamps]: RSI series
         """
         ldt_timestamps = self.ldt_timestamps()
         pre_timestamps = ut.pre_timestamps(ldt_timestamps, 250)
@@ -523,5 +541,4 @@ class Portfolio():
             else:
                 rs = avg_gain[i]/avg_loss[i]
                 rsi[i] = 100 - 100/(1+rs)
-        print(rsi[ldt_timestamps])
         return(rsi[ldt_timestamps])
