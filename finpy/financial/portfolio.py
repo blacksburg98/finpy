@@ -184,7 +184,9 @@ class Portfolio():
         
     def daily_return(self,tick=None):
         """
-        Return the return of each day, a list.
+        Return the return rate of each day, a list.
+            :param tick: The ticker of the equity.
+            :type string:
         """
         if tick == None:
             total = self.total
@@ -334,7 +336,7 @@ class Portfolio():
         It can be S&P 500, Russel 2000, or your choice of market indicator.
         This function uses polyfit in numpy to find the closest linear equation.
         """
-        beta, alpha = np.polyfit(self.normalized(tick=benchmark), self.normalized(), 1)
+        beta, alpha = np.polyfit(self.daily_return(tick=benchmark), self.daily_return(), 1)
         return beta, alpha
 
     def beta(self, benchmark, tick=None):
@@ -342,8 +344,8 @@ class Portfolio():
         benchmark is an Equity representing the market. 
         This function uses cov in numpy to calculate beta.
         """
-        benchmark_close = self.normalized(tick=benchmark) 
-        C = np.cov(benchmark_close, self.normalized(tick=tick))/np.var(benchmark_close)
+        benchmark_return = self.daily_return(tick=benchmark) 
+        C = np.cov(benchmark_return, self.daily_return(tick=tick))/np.var(benchmark_return)
         beta = C[0][1]/C[0][0]
         return beta
 
