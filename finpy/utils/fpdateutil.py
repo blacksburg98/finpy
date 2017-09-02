@@ -148,14 +148,8 @@ def getNYSEdays(startday = dt.datetime(1964,7,5), endday = dt.datetime(2020,12,3
     @return list: of timestamps between startday and endday on which NYSE traded
     @rtype datetime
     """
-    start = startday - timeofday
-    end = endday - timeofday
-
-    dates = GTS_DATES[start:end]
-
-    ret = [x + timeofday for x in dates]
-
-    return(ret)
+    dates = GTS_DATES[startday:endday]
+    return(dates)
 
 def getNextNNYSEdays(startday, days, timeofday):
     """

@@ -10,6 +10,7 @@ import urllib.request, urllib.error, urllib.parse
 import datetime
 import os
 import argparse
+from finpy.data.fetch import Fetcher
 
 def get_data(data_path, ls_symbols, src="Yahoo"):
 
@@ -31,23 +32,15 @@ def get_data(data_path, ls_symbols, src="Yahoo"):
         symbol_data=list()
         # print "Getting {0}".format(symbol)`
         dt_start=datetime.datetime(1986, 1, 1, 16)
+        file = data_path + symbol_name + ".csv"
+        f = open (file, 'w')
         try:
             month = dt_start.month - 1
-            if src == "Yahoo":
-                params= urllib.parse.urlencode ({'a':month, 'b':dt_start.day, 'c':dt_start.year, 'd':_now.month, 'e':_now.day, 'f':_now.year, 's': symbol})
-            # Fix for ubuntu. For some reasons, ubuntu put %0D at the end
-                if params[-3:] == "%0D":
-                    params = params[:-3]
-                url = "http://ichart.finance.yahoo.com/table.csv?%s" % params
-            elif src == "Google":
+            if src == "Google":
                 sd = dt_start.strftime("%b %d, %Y")
                 ed = _now.strftime("%b %d, %Y")
                 params= urllib.parse.urlencode ({'q': symbol,'startdate':sd,'enddate':ed,'output':'csv'})
                 url = "http://www.google.com/finance/historical?%s" % params
-            print(url)
-            url_get= urllib.request.urlopen(url)
-            f= open (data_path + symbol_name + ".csv", 'w')
-            if src == "Google":
                 header = url_get.readline()
                 f.write(header[3:].decode("utf-8"))
                 lines = url_get.readlines()
@@ -58,7 +51,9 @@ def get_data(data_path, ls_symbols, src="Yahoo"):
                     c[0] = dt.strftime("%Y-%m-%d")
                     f.write(','.join(c) + "\n")
             elif src == "Yahoo":
-                f.write(url_get.read().decode("utf-8"))
+                data = Fetcher(symbol, [1986,1,1], [_now.year,_now.month,_now.day])    
+                stock = data.getHistorical()
+                stock.to_csv(f, index=False, columns=['Date','Open','High','Low','Close','Volume','Adj Close'])
             f.close();    
                         
         except urllib.error.HTTPError:

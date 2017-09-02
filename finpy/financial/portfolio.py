@@ -430,7 +430,7 @@ class Portfolio():
         # This is used to calculate moving average for the first window.
         ldf_data = get_tickdata([tick], pre_timestamps)
         merged_data = pd.concat([ldf_data[tick]['close'], self.equities[tick]['close']])
-        all_timestamps = pre_timestamps + ldt_timestamps
+        all_timestamps = pre_timestamps.append(ldt_timestamps)
         merged_daily_rtn = (self.equities.loc[tick,:,'close']/self.equities.loc[tick,:,'close'].shift(1)-1)
         merged_daily_rtn[0] = 0
         sigma = pd.rolling_std(merged_daily_rtn, window=window)

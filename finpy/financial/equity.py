@@ -38,7 +38,7 @@ def get_tickdata(ls_symbols, ldt_timestamps, fill=True, df=pd.DataFrame, source=
     for s in ls_symbols:
         stocks[s] = df(index=ldt_timestamps, data=d_data[s])
         stocks[s]['shares'] = np.nan
-        stocks[s]['shares'][0] = 0
+        stocks[s].loc[ldt_timestamps[0],'shares'] = 0
     return stocks 
 class Equity(pd.DataFrame, FinCommon):
     """
