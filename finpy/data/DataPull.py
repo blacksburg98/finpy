@@ -32,7 +32,7 @@ def get_data(data_path, ls_symbols, src="Yahoo"):
         symbol_data=list()
         # print "Getting {0}".format(symbol)`
         dt_start=datetime.datetime(1986, 1, 1, 16)
-        file = data_path + symbol_name + ".csv"
+        file = os.path.join(data_path, symbol_name + ".csv")
         f = open (file, 'w')
         try:
             month = dt_start.month - 1
@@ -65,11 +65,14 @@ def get_data(data_path, ls_symbols, src="Yahoo"):
             
     print("All done. Got {0} stocks. Could not get {1}".format(len(ls_symbols) - miss_ctr, miss_ctr))
 
-def latest_local(file_path):
-    with open(file_path) as f:
-        f.readline()
-        topline = f.readline()
-        dt_str = topline.split(',')[0]
+def latest_local_dt(data_path, symbol_name):
+    file_path = os.path.join(data_path, symbol_name + ".csv")
+    with open(file_path, "rb") as f:
+        f.seek(-2, os.SEEK_END)     # Jump to the second last byte.
+        while f.read(1) != b"\n":   # Until EOL is found...
+            f.seek(-2, os.SEEK_CUR) # ...jump back the read byte plus one more.
+        lastline = f.readline().decode("utf-8")         # Read last line.
+        dt_str = lastline.split(',')[0]
         dt = datetime.datetime.strptime(dt_str, "%Y-%m-%d")
         return dt
 

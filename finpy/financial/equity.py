@@ -24,7 +24,7 @@ def get_tickdata(ls_symbols, ldt_timestamps, fill=True, df=pd.DataFrame, source=
     """
     c_dataobj = da.DataAccess(source, cachestalltime=0)
     if source == "Yahoo":
-        ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
+        ls_keys = ['open', 'high', 'low', 'actual_close', 'volume', 'close']
     elif source == "Google":
         ls_keys = ['open', 'high', 'low', 'close', 'volume']
     ldf_data = c_dataobj.get_data(ldt_timestamps, ls_symbols, ls_keys)

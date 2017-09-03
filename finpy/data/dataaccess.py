@@ -68,12 +68,7 @@ class DataAccess(object):
         @note: No data is actually read in the constructor. Only paths for the source are initialized
         @param: Scratch defaults to a directory in /tmp/QSScratch
         '''
-
-        self.folderList = list()
-        self.folderSubList = list()
-        self.cachestalltime = cachestalltime
-        self.fileExtensionToRemove = ".pkl"
-
+        self.folderList = []
         try:
             self.rootdir = os.environ['FINPYDATA']
             try:
@@ -91,9 +86,7 @@ class DataAccess(object):
                 self.rootdir = os.path.join(os.path.dirname(__file__), 'finpy_data')
                 self.scratchdir = os.path.join(tempfile.gettempdir(), 'QSScratch')
 
-#        print "Scratch Directory: ", self.scratchdir
-#        print "Data Directory: ", self.rootdir
-
+        # print(self.rootdir)
         if not os.path.isdir(self.rootdir):
             print("Data path provided is invalid")
             raise
@@ -101,28 +94,7 @@ class DataAccess(object):
         if not os.path.exists(self.scratchdir):
             os.mkdir(self.scratchdir)
 
-        if (sourcein == DataSource.NORGATE):
-
-            self.source = DataSource.NORGATE
-            self.midPath = "/Processed/Norgate/Stocks/"
-
-            self.folderSubList.append("/US/AMEX/")
-            self.folderSubList.append("/US/NASDAQ/")
-            self.folderSubList.append("/US/NYSE/")
-            self.folderSubList.append("/US/NYSE Arca/")
-            self.folderSubList.append("/US/OTC/")
-            self.folderSubList.append("/US/Delisted Securities/")
-            self.folderSubList.append("/US/Indices/")
-
-            for i in self.folderSubList:
-                self.folderList.append(self.rootdir + self.midPath + i)
-        elif (sourcein == DataSource.CUSTOM):
-            self.source = DataSource.CUSTOM
-            self.folderList.append(self.rootdir + "/Processed/Custom/")
-        elif (sourcein == DataSource.MLT):
-            self.source = DataSource.MLT
-            self.folderList.append(self.rootdir + "/ML4Trading/")
-        elif (sourcein == DataSource.YAHOO):
+        if (sourcein == DataSource.YAHOO):
             self.source = DataSource.YAHOO
             self.folderList.append(self.rootdir + "/Yahoo/")
             self.fileExtensionToRemove = ".csv"
@@ -146,28 +118,18 @@ class DataAccess(object):
         continues as usual. No errors are raised at the moment.
         '''
         #read in data for a stock
+        latest_req_dt = ts_list[-1]
         ldmReturn = []
+        data_path = os.path.join(self.rootdir, "Yahoo")
         for symbol in symbol_list:
-            #print self.getPathOfFile(symbol)
             try:
-                if (self.source == DataSource.YAHOO):
-                    file_path = self.rootdir + "/Yahoo/" + symbol + ".csv"
-                    dt_latest = dt.datetime.strptime("1900-1-1", "%Y-%m-%d")
-                    dir_name = os.path.dirname(file_path) + os.sep
-                    if dt_latest < ts_list[-1]:
-                        DataPull.get_data(dir_name, [symbol])
-                elif self.source == DataSource.GOOGLE:
-                    file_path= self.getPathOfCSVFile(symbol);
-                    if file_path != None:
-                        dt_latest = DataPull.latest_local(file_path)
-                    else:
-                        file_path = self.rootdir + "/Google/" + symbol + ".csv"
-                        dt_latest = dt.datetime.strptime("1900-1-1", "%Y-%m-%d")
-                    dir_name = os.path.dirname(file_path) + os.sep
-                    if dt_latest < ts_list[-1]:
-                        DataPull.get_data(dir_name, [symbol], src="Google")
+                file_path = os.path.join(self.rootdir, "Yahoo",  symbol + ".csv")
+                dir_name = os.path.dirname(file_path) + os.sep
+                latest_local_dt = DataPull.latest_local_dt(data_path, symbol)		
+                if latest_local_dt < latest_req_dt: 
+                    DataPull.get_data(dir_name, [symbol])
                 else:
-                    file_path= self.getPathOfFile(symbol);
+                    print("Do not pull from Yahoo. Use local file for " + symbol)
                 
             except IOError:
                 # If unable to read then continue. The value for this stock will be nan
@@ -176,7 +138,7 @@ class DataAccess(object):
                 
             a = pd.DataFrame(index=ts_list)
             b = pd.read_csv(file_path, index_col='Date',parse_dates=True)
-            b.columns = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
+            b.columns = ['open', 'high', 'low', 'actual_close', 'volume', 'close']
             del b.index.name
             a = pd.concat([a, b], axis=1, join_axes=[a.index])
             a = a[data_item]
@@ -196,82 +158,7 @@ class DataAccess(object):
         @note: If a symbol is not found then a message is printed. All the values in the column for that stock will be NaN. Execution then 
         continues as usual. No errors are raised at the moment.
         '''
-
-        # Construct hash -- filename where data may be already
-        #
-        # The idea here is to create a filename from the arguments provided.
-        # We then check to see if the filename exists already, meaning that
-        # the data has already been created and we can just read that file.
-
-        # Create the hash for the symbols
-        hashsyms = 0
-        for i in symbol_list:
-            hashsyms = (hashsyms + hash(i)) % 10000000
-
-        # Create the hash for the timestamps
-        hashts = 0
-
-        for i in ts_list:
-            hashts = (hashts + hash(i)) % 10000000
-        hashstr = 'qstk-' + str (self.source)+'-' +str(abs(hashsyms)) + '-' + str(abs(hashts)) \
-            + '-' + str(hash(str(data_item))) #  + '-' + str(hash(str(os.path.getctime(spyfile))))
-        cachefilename = self.scratchdir + '/' + hashstr + '.pkl'
-        if verbose:
-            print("cachefilename is: " + cachefilename)
-        # now eather read the pkl file, or do a hardread
-        readfile = False  # indicate that we have not yet read the file
-
-        #check if the cachestall variable is defined.
-        # try:
-        #     catchstall=dt.timedelta(hours=int(os.environ['CACHESTALLTIME']))
-        # except:
-        #     catchstall=dt.timedelta(hours=1)
-        cachestall = dt.timedelta(hours=self.cachestalltime)
-
-        # Check if the file is older than the cachestalltime
-        if os.path.exists(cachefilename):
-            if ((dt.datetime.now() - dt.datetime.fromtimestamp(os.path.getmtime(cachefilename))) < cachestall):
-                if verbose:
-                    print("cache hit")
-                try:
-                    cachefile = open(cachefilename, "rb")
-                    start = time.time() # start timer
-                    retval = pkl.load(cachefile)
-                    elapsed = time.time() - start # end timer
-                    readfile = True # remember success
-                    cachefile.close()
-                except IOError:
-                    if verbose:
-                        print("error reading cache: " + cachefilename)
-                        print("recovering...")
-                except EOFError:
-                    if verbose:
-                        print("error reading cache: " + cachefilename)
-                        print("recovering...")
-        if (readfile!=True):
-            if verbose:
-                print("cache miss")
-                print("beginning hardread")
-            start = time.time() # start timer
-            if verbose:
-                print("data_item(s): " + str(data_item))
-                print("symbols to read: " + str(symbol_list))
-            retval = self.get_data_hardread(ts_list, 
-                symbol_list, data_item, verbose)
-            elapsed = time.time() - start # end timer
-            if verbose:
-                print("end hardread")
-                print("saving to cache")
-            try:
-                cachefile = open(cachefilename,"wb")
-                pkl.dump(retval, cachefile, -1)
-                os.chmod(cachefilename,0o666)
-            except IOError:
-                print("error writing cache: " + cachefilename)
-            if verbose:
-                print("end saving to cache")
-            if verbose:
-                print("reading took " + str(elapsed) + " seconds")
+        retval = self.get_data_hardread(ts_list, symbol_list, data_item, verbose)
         return retval
 
     def getPathOfFile(self, symbol_name, bDelisted=False):
