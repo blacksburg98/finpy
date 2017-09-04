@@ -18,7 +18,7 @@ class TestPortfolioFunctions(unittest.TestCase):
         with open("orders.csv", 'rt', encoding="UTF-8") as csvfile:
             order_reader = csv.reader(csvfile, delimiter=',', skipinitialspace=True)
             for row in order_reader:
-                date = dt.datetime(int(row[0]),int(row[1]), int(row[2]), 16)
+                date = dt.datetime(int(row[0]),int(row[1]), int(row[2]))
                 o = Order(action=row[4], date=date, tick=row[3], shares=row[5])
                 order_list.append(o)
         # order_list needs to be sorted. Otherwise the algorithm won't work.
@@ -68,15 +68,15 @@ class TestPortfolioFunctions(unittest.TestCase):
 
     def test_equities_own(self):
         print("test equities owned...")
-        date = dt.datetime(2011,1,12, 16)
+        date = dt.datetime(2011,1,12)
         self.assertEqual(self.pf.equities_long(date), ["_AAPL"])
-        date = dt.datetime(2011,3,4, 16)
+        date = dt.datetime(2011,3,4)
         self.assertEqual(self.pf.equities_long(date), ["_IBM"])
 
     def test_beta(self):
         print("test beta...")
         beta = self.pf.beta('$SPX')
-        self.assertEqual(round(beta,4), -0.4234)
+        self.assertEqual(round(beta,4), 0.3241)
 
     def test_info_ratio(self):
         print("test information ratio...")
@@ -84,11 +84,11 @@ class TestPortfolioFunctions(unittest.TestCase):
 
     def test_appraisal_ratio(self):
         print("test appraisal ratio...")
-        self.assertEqual(round(self.pf.appraisal_ratio('$SPX'), 4), 0.0363)
+        self.assertEqual(round(self.pf.appraisal_ratio('$SPX'), 4), 0.0929)
 
     def test_residual_return(self):
         print("test residual return...")
-        self.assertEqual(round(self.pf.mean_residual_return('$SPX'), 6), 0.000449)
+        self.assertEqual(round(self.pf.mean_residual_return('$SPX'), 6), 0.000492)
 
     def test_equity_total(self):
         print("test equity total...")
@@ -113,7 +113,7 @@ class TestPortfolioFunctions(unittest.TestCase):
     def test_equity_beta(self):
         print("test equity beta...")
         beta = self.pf.beta('$SPX', '_AAPL')
-        self.assertEqual(round(beta,4), -0.8104)
+        self.assertEqual(round(beta,4), 0.7634)
 
     def test_equity_info_ratio(self):
         print("test equity information ratio...")
@@ -121,11 +121,11 @@ class TestPortfolioFunctions(unittest.TestCase):
 
     def test_equity_appraisal_ratio(self):
         print("test equity appraisal ratio...")
-        self.assertEqual(round(self.pf.appraisal_ratio('$SPX', tick='_AAPL'), 4), 0.0235)
+        self.assertEqual(round(self.pf.appraisal_ratio('$SPX', tick='_AAPL'), 4), 0.058)
 
     def test_equity_residual_return(self):
-        print("test equity residual return...")
-        self.assertEqual(round(self.pf.mean_residual_return(benchmark='$SPX', tick='_AAPL'), 6), 0.000622)
+       print("test equity residual return...")
+       self.assertEqual(round(self.pf.mean_residual_return(benchmark='$SPX', tick='_AAPL'), 6), 0.000714)
  
 if __name__ == '__main__':
     if 'FINPYDATA' in os.environ:
