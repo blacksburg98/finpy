@@ -22,7 +22,9 @@ def get_data(data_path, ls_symbols, src="Yahoo"):
 
     _now =datetime.datetime.now();
     miss_ctr=0; #Counts how many symbols we could not get
+    print(data_path)
     for symbol in ls_symbols:
+        print(symbol)
         # Preserve original symbol since it might
         # get manipulated if it starts with a "$"
         symbol_name = symbol
@@ -30,13 +32,12 @@ def get_data(data_path, ls_symbols, src="Yahoo"):
             symbol = '^' + symbol[1:]
 
         symbol_data=list()
-        # print "Getting {0}".format(symbol)`
-        dt_start=datetime.datetime(1986, 1, 1, 16)
+        dt_start = datetime.datetime(1986, 1, 1, 16)
         file = os.path.join(data_path, symbol_name + ".csv")
         f = open (file, 'w')
-        try:
-            month = dt_start.month - 1
-            if src == "Google":
+        month = dt_start.month - 1
+        if src == "Google":
+            try:
                 sd = dt_start.strftime("%b %d, %Y")
                 ed = _now.strftime("%b %d, %Y")
                 params= urllib.parse.urlencode ({'q': symbol,'startdate':sd,'enddate':ed,'output':'csv'})
@@ -50,18 +51,26 @@ def get_data(data_path, ls_symbols, src="Yahoo"):
                     dt = datetime.datetime.strptime(c[0], "%d-%b-%y")
                     c[0] = dt.strftime("%Y-%m-%d")
                     f.write(','.join(c) + "\n")
-            elif src == "Yahoo":
-                data = Fetcher(symbol, [1986,1,1], [_now.year,_now.month,_now.day])    
+            except urllib.error.HTTPError:
+                miss_ctr += 1
+                print("Unable to fetch data for stock: {0} at {1}".format(symbol_name, url))
+            except urllib.error.URLError:
+                miss_ctr += 1
+                print("URL Error for stock: {0} at {1}".format(symbol_name, url))
+        elif src == "Yahoo":
+            try:
+                data = Fetcher(symbol, [1986,1,1], [_now.year,_now.month,_now.day])
+            except:
+                miss_ctr += 1
+                print("Unable to fetch data for stock: {0}".format(symbol_name))
+            try:    
                 stock = data.getHistorical()
-                stock.to_csv(f, index=False, columns=['Date','Open','High','Low','Close','Volume','Adj Close'])
-            f.close();    
+            except:
+                miss_ctr += 1
+                print("Unable to fetch data for stock: {0}".format(symbol_name))
+            stock.to_csv(f, index=False, columns=['Date','Open','High','Low','Close','Volume','Adj Close'])
+            f.close();
                         
-        except urllib.error.HTTPError:
-            miss_ctr += 1
-            print("Unable to fetch data for stock: {0} at {1}".format(symbol_name, url))
-        except urllib.error.URLError:
-            miss_ctr += 1
-            print("URL Error for stock: {0} at {1}".format(symbol_name, url))
             
     print("All done. Got {0} stocks. Could not get {1}".format(len(ls_symbols) - miss_ctr, miss_ctr))
 
