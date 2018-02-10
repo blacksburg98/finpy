@@ -464,7 +464,39 @@ class Portfolio():
             int_date = date
         c = merged_data.index.get_loc(int_date)
         m = merged_data[c-window:c].min()
-        r = (merged_data[c]-m)/m
+        r = (merged_data[c]-m)/merged_data[c]
+        return r
+
+    def max_fall(self, tick, date, window=20):
+        """
+        Find the change percentage between the top and the bottom of the retrospective window.
+
+            :param tick: ticker
+            :type tick: string
+            :param date: date to calculate max_rise
+            :type date: datetime
+            :param window: The days of window to calculate max_rise.
+            :type window: int
+        """
+        ldt_timestamps = self.ldt_timestamps() 
+        pre_timestamps = ut.pre_timestamps(ldt_timestamps, window)
+        first = pre_timestamps[0]
+        # ldf_data has the data prior to our current interest.
+        # This is used to calculate moving average for the first window.
+        try:
+            self.equties['close'][first]
+            merged_data = self.equties['close']
+        except:
+            ldf_data = get_tickdata([tick], pre_timestamps)
+            merged_data = pd.concat([ldf_data[tick]['close'], self.equities.loc[tick,:,'close']])
+        if(isinstance(date , int)):
+            int_date = ldt_timestamps[date]
+        else:
+            int_date = date
+        c = merged_data.index.get_loc(int_date)
+        mx = merged_data[c-window:c].max()
+        mn = merged_data[c-window:c].min()
+        r = (mx-mn)/merged_data[c]
         return r
 
     def moving_average(self, tick, window=20):

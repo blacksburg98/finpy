@@ -125,19 +125,27 @@ class DataAccess(object):
             try:
                 file_path = os.path.join(self.rootdir, "Yahoo",  symbol + ".csv")
                 dir_name = os.path.dirname(file_path) + os.sep
-                latest_local_dt = DataPull.latest_local_dt(data_path, symbol)		
-                if latest_local_dt < latest_req_dt: 
+                data_update = False
+                if not os.path.isfile(file_path):
+                    data_update = True
+                elif os.stat(file_path).st_size <= 6:
+                    data_update = True
+                else:
+                    latest_local_dt = DataPull.latest_local_dt(data_path, symbol)
+                    if latest_local_dt < latest_req_dt: 
+                        data_update = True
+                if data_update:    
                     DataPull.get_data(dir_name, [symbol])
                 else:
-                    print("Do not pull from Yahoo. Use local file for " + symbol)
+                    print("Do not pull. Use local file for " + symbol)
                 
             except IOError:
                 # If unable to read then continue. The value for this stock will be nan
-                print(symbol)
+                print("Error:" + symbol)
                 continue;
                 
             a = pd.DataFrame(index=ts_list)
-            b = pd.read_csv(file_path, index_col='Date',parse_dates=True)
+            b = pd.read_csv(file_path, index_col='Date',parse_dates=True,na_values='null')
             b.columns = ['open', 'high', 'low', 'actual_close', 'volume', 'close']
             del b.index.name
             a = pd.concat([a, b], axis=1, join_axes=[a.index])

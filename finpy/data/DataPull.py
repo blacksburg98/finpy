@@ -11,6 +11,7 @@ import datetime
 import os
 import argparse
 from finpy.data.fetch import Fetcher
+import re
 
 def get_data(data_path, ls_symbols, src="Yahoo"):
 
@@ -22,7 +23,6 @@ def get_data(data_path, ls_symbols, src="Yahoo"):
 
     _now =datetime.datetime.now();
     miss_ctr=0; #Counts how many symbols we could not get
-    print(data_path)
     for symbol in ls_symbols:
         print(symbol)
         # Preserve original symbol since it might
@@ -82,7 +82,11 @@ def latest_local_dt(data_path, symbol_name):
             f.seek(-2, os.SEEK_CUR) # ...jump back the read byte plus one more.
         lastline = f.readline().decode("utf-8")         # Read last line.
         dt_str = lastline.split(',')[0]
-        dt = datetime.datetime.strptime(dt_str, "%Y-%m-%d")
+        dt_re = re.compile("\d\d\d\d-\d\d-\d\d")
+        if dt_re.match(dt_str): 
+            dt = datetime.datetime.strptime(dt_str, "%Y-%m-%d")
+        else:    
+            dt = datetime.datetime.strptime("1950-01-01", "%Y-%m-%d")
         return dt
 
 def read_symbols(s_symbols_file):
