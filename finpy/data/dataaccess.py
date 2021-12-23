@@ -146,9 +146,8 @@ class DataAccess(object):
                 
             a = pd.DataFrame(index=ts_list)
             b = pd.read_csv(file_path, index_col='Date',parse_dates=True,na_values='null')
-            b.columns = ['open', 'high', 'low', 'actual_close', 'volume', 'close']
-            del b.index.name
-            a = pd.concat([a, b], axis=1, join_axes=[a.index])
+            b.columns = ['open', 'high', 'low', 'actual_close', 'close', 'volume']
+            a = pd.concat([a, b], axis=1,)
             a = a[data_item]
             ldmReturn.append(a)
                 

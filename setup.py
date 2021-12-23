@@ -17,9 +17,9 @@ setup(
     description='Financial Python. Using python to do stock analysis.',
     long_description=open(__readme__).read(),
     install_requires=[
-        "NumPy >= 1.6.1",
-        "pandas >= 0.7.3",
-        "dyplot >= 0.8.8"
+        "NumPy >= 1.21.3",
+        "pandas >= 1.3.4",
+        "dyplot >= 0.8.9"
     ],
     classifiers = [
         "Intended Audience :: Financial and Insurance Industry",

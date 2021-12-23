@@ -25,7 +25,8 @@ class Portfolio():
     order_list is a list of Order
     """
     def __init__(self, equities, cash, dates, order_list=None):
-        self.equities = pd.Panel(equities)
+        self.equities = pd.concat(equities, names=["tick", "date"])
+#        self.equities = self.equities.reorder_levels(order=["date", "tick"])
         """
             :var equities: is a Panel of equities.
         """ 
@@ -36,15 +37,16 @@ class Portfolio():
             ol.sort(key=lambda x: x.date)
             self.order = ol
             for x in [x for x in order_list if x.price == None]:
-                x.price = self.equities[x.tick]['close'][x.date]
+                x.price = self.equities.loc[(x.tick, x.date),'close']
         self.cash = pd.Series(index=dates)
         self.cash[0] = cash
         self.total = pd.Series(index=dates)
         self.total[0] = self.dailysum(dates[0])
+        self.dates = dates
 
     def dailysum(self, date):
         " Calculate the total balance of the date."
-        equities_total = np.nansum(self.equities.loc[:,date,'shares'] * self.equities.loc[:,date,'close'])
+        equities_total = np.nansum(self.equities.xs(key=date, level=1)['shares'] * self.equities.xs(key=date, level=1)['close'])
         total = equities_total + self.cash[date]
         return total
 
@@ -55,13 +57,13 @@ class Portfolio():
         Before we buy, we need to update share numbers. "
         """
         self.cal_total(date)
-        last_valid = self.equities.loc[tick,:,'shares'].last_valid_index()
-        self.equities.loc[tick, last_valid:date, 'shares'] = self.equities.loc[tick, last_valid, 'shares']
-        self.equities.loc[tick, date, 'shares'] += shares
+        last_valid = self.equities.loc[(tick,slice(None)),'shares'].last_valid_index()[1]
+        self.equities.loc[(tick, slice(last_valid, date)), 'shares'] = self.equities.loc[(tick, last_valid), 'shares']
+        self.equities.loc[(tick, date), 'shares'] += shares
         self.cash[date] -= price*shares
         self.total[date] = self.dailysum(date)
         if update_ol:
-            self.order.append(Order(action="buy", date=date, tick=tick, shares=shares, price=self.equities[tick]['close'][date]))
+            self.order.append(Order(action="buy", date=date, tick=tick, shares=shares, price=self.equities.loc[(tick, date), 'close']))
 
     def sell(self, shares, tick, price, date, update_ol=False):
         """
@@ -69,13 +71,13 @@ class Portfolio():
         Calculate shares and cash upto the date.
         """
         self.cal_total(date)
-        last_valid = self.equities.loc[tick,:,'shares'].last_valid_index()
-        self.equities.loc[tick, last_valid:date, 'shares'] = self.equities.loc[tick, last_valid, 'shares']
-        self.equities.loc[tick, date, 'shares'] -= shares
+        last_valid = self.equities.loc[(tick,slice(None)),'shares'].last_valid_index()[1]
+        self.equities.loc[(tick, slice(last_valid, date)), 'shares'] = self.equities.loc[(tick, last_valid), 'shares']
+        self.equities.loc[(tick, date), 'shares'] -= shares
         self.cash[date] += price*shares
         self.total[date] = self.dailysum(date)
         if update_ol:
-            self.order.append(Order(action="sell", date=date, tick=tick, shares=shares, price=self.equities[tick]['close'][date]))
+            self.order.append(Order(action="sell", date=date, tick=tick, shares=shares, price=self.equities.loc[(tick, date), 'close']))
 
     def fillna_cash(self, date):
         " fillna on cash up to date "
@@ -90,8 +92,8 @@ class Portfolio():
         return update_start and update_end.
         """
         update_start, update_end = self.fillna_cash(date)
-        for tick in self.equities:
-            self.equities.loc[tick, update_start:update_end,'shares'] = self.equities.loc[tick, update_start, 'shares']
+        for tick in self.equities.index.unique(0).tolist():
+            self.equities.loc[(tick, slice(update_start, update_end)),'shares'] = self.equities.loc[(tick, update_start), 'shares']
         return update_start, update_end
 
     def cal_total(self, date=None):
@@ -100,13 +102,13 @@ class Portfolio():
         """
         if date == None:
             equities_sum = pd.Series(index=self.ldt_timestamps())
-            each_total = self.equities.loc[:,:,'close'] * self.equities.loc[:,:,'shares']
-            equities_sum = each_total.sum(axis=1)
+            each_total = self.equities.loc[(slice(None),slice(None)),'close'] * self.equities.loc[(slice(None),slice(None)),'shares']
+            equities_sum = each_total.groupby(level=1).sum()
             self.total = self.cash + equities_sum       
         else:
             start, end = self.fillna(date)
-            equities_total_df = self.equities.loc[:,start:end,'shares'] * self.equities.loc[:,start:end,'close']
-            equities_total = equities_total_df.sum(axis=1)
+            equities_total_df = self.equities.loc[(slice(None),slice(start,end)),'shares'] * self.equities.loc[(slice(None),slice(start,end)),'close']
+            equities_total = equities_total_df.groupby(level=1).sum()
             self.total[start:end ] = equities_total + self.cash[start:end]
 
     def put_orders(self):
@@ -159,9 +161,9 @@ class Portfolio():
             if cash:
                 l.append(round(self.cash[i], 2))
             if equity_col != None:
-                for e in self.equities:
+                for e in self.equities.index.droplevel(1).drop_duplicates():
                     for col in equity_col:
-                        l.append(round(self.equities[e][col][i], 2))
+                        l.append(round(self.equities.loc[(e, i), col], 2))
             lines.append(l)
         with open(csv_file, 'w') as fp:
             cw = csv.writer(fp, lineterminator='\n', delimiter=d)
@@ -191,7 +193,7 @@ class Portfolio():
         if tick == None:
             total = self.total
         else:
-            total = self.equities.loc[tick,:,'close']
+            total = self.equities.loc[(tick,slice(None)),'close'].droplevel(0)
         daily_rtn = total/total.shift(1)-1
         daily_rtn[0] = 0
         return np.array(daily_rtn)
@@ -205,14 +207,15 @@ class Portfolio():
         return np.std(self.daily_return(tick))
 
     def normalized(self, tick=None):
+        start = self.ldt_timestamps()[0]
         if tick == None:
             return self.total/self.total[0]
         else:
-            return self.equities[tick]['close']/self.equities[tick]['close'][0]
+            return (self.equities.loc[(tick, slice(None)), 'close']/self.equities.loc[(tick, start), 'close']).droplevel(0)
     def normalized_price(self, tick):
-        self.equities[tick]['open'] = self.equities[tick]['open'] * self.equities[tick]['close']/self.equities[tick]['actual_close']
-        self.equities[tick]['high'] = self.equities[tick]['high'] * self.equities[tick]['close']/self.equities[tick]['actual_close']
-        self.equities[tick]['low'] = self.equities[tick]['low'] * self.equities[tick]['close']/self.equities[tick]['actual_close']
+        self.equities.loc[(tick, slice(None)),'open'] = self.equities.loc[(tick, slice(None)),'open'] * self.equities.loc[(tick, slice(None)),'close']/self.equities.loc[(tick, slice(None)),'actual_close']
+        self.equities.loc[(tick, slice(None)),'high'] = self.equities.loc[(tick, slice(None)),'high'] * self.equities.loc[(tick, slice(None)),'close']/self.equities.loc[(tick, slice(None)),'actual_close']
+        self.equities.loc[(tick, slice(None)),'low'] = self.equities.loc[(tick, slice(None)),'low'] * self.equities.loc[(tick, slice(None)),'close']/self.equities.loc[(tick, slice(None)),'actual_close']
 
     def sortino(self, k=252, tick=None):
         """
@@ -231,7 +234,7 @@ class Portfolio():
         if tick == None:
             return self.total[-1]/self.total[0]
         else:
-            return self.equities[tick]['close'][-1]/self.equities.loc[tick]['close'][0]
+            return self.equities.loc[(tick, self.ldt_timestamps()[-1]), 'close']/self.equities.loc[(tick, self.ldt_timestamps()[0]), 'close']
 
     def moving_average(self, window=20, tick=None):
         """
@@ -404,7 +407,7 @@ class Portfolio():
         up = 0.0
         dn = 0.0
         for i in range(first, last+1):
-            if self.equities[tick]['close'][i] < self.equities[tick]['close'][i-1]:
+            if self.equities.loc[(tick, ldt_index[i]), 'close'] < self.equities.loc[(tick, ldt_index[i-1]), 'close']:
                 dn += 1
             else:
                 up += 1
@@ -429,12 +432,13 @@ class Portfolio():
         # ldf_data has the data prior to our current interest.
         # This is used to calculate moving average for the first window.
         ldf_data = get_tickdata([tick], pre_timestamps)
-        merged_data = pd.concat([ldf_data[tick]['close'], self.equities[tick]['close']])
+        pre_data = pd.concat(ldf_data, names=["tick", "date"])
+        merged_data = pd.concat([pre_data.loc[(tick, slice(None)), 'close'], self.equities.loc[(tick,slice(None)),'close']])
         all_timestamps = pre_timestamps.append(ldt_timestamps)
-        merged_daily_rtn = (self.equities.loc[tick,:,'close']/self.equities.loc[tick,:,'close'].shift(1)-1)
+        merged_daily_rtn = (self.equities.loc[(tick,slice(None)),'close']/self.equities.loc[(tick,slice(None)),'close'].shift(1)-1)
         merged_daily_rtn[0] = 0
-        sigma = pd.rolling_std(merged_daily_rtn, window=window)
-        return sigma[self.ldt_timestamps()]
+        sigma = merged_daily_rtn.rolling(window).std()
+        return sigma.droplevel(0)[self.ldt_timestamps()]
 
     def max_rise(self, tick, date, window=20):
         """
@@ -453,15 +457,17 @@ class Portfolio():
         # ldf_data has the data prior to our current interest.
         # This is used to calculate moving average for the first window.
         try:
-            self.equties['close'][first]
-            merged_data = self.equties['close']
+            self.equities.loc[(tick, first), 'close']
+            merged_data = self.equties.loc[(tick, slice(None)), 'close']
         except:
             ldf_data = get_tickdata([tick], pre_timestamps)
-            merged_data = pd.concat([ldf_data[tick]['close'], self.equities.loc[tick,:,'close']])
+            pre_data = pd.concat(ldf_data, names=["tick", "date"])
+            merged_data = pd.concat([pre_data.loc[(tick, slice(None)), 'close'], self.equities.loc[(tick,slice(None)),'close']])
         if(isinstance(date , int)):
             int_date = ldt_timestamps[date]
         else:
             int_date = date
+        merged_data = merged_data.droplevel(0)   
         c = merged_data.index.get_loc(int_date)
         m = merged_data[c-window:c].min()
         r = (merged_data[c]-m)/merged_data[c]
@@ -484,15 +490,17 @@ class Portfolio():
         # ldf_data has the data prior to our current interest.
         # This is used to calculate moving average for the first window.
         try:
-            self.equties['close'][first]
-            merged_data = self.equties['close']
+            self.equities.loc[(tick, first), 'close']
+            merged_data = self.equties.loc[(tick, slice(None)), 'close']
         except:
             ldf_data = get_tickdata([tick], pre_timestamps)
-            merged_data = pd.concat([ldf_data[tick]['close'], self.equities.loc[tick,:,'close']])
+            pre_data = pd.concat(ldf_data, names=["tick", "date"])
+            merged_data = pd.concat([pre_data.loc[(tick, slice(None)), 'close'], self.equities.loc[(tick,slice(None)),'close']])
         if(isinstance(date , int)):
             int_date = ldt_timestamps[date]
         else:
             int_date = date
+        merged_data = merged_data.droplevel(0)   
         c = merged_data.index.get_loc(int_date)
         mx = merged_data[c-window:c].max()
         mn = merged_data[c-window:c].min()
@@ -533,13 +541,14 @@ class Portfolio():
         # ldf_data has the data prior to our current interest.
         # This is used to calculate moving average for the first window.
         ldf_data = get_tickdata([tick], pre_timestamps)
-        merged_data = pd.concat([ldf_data[tick]['close'], self.equities[tick]['close']])
+        pre_data = pd.concat(ldf_data, names=["tick", "date"])
+        merged_data = pd.concat([pre_data.loc[(tick, slice(None)), 'close'], self.equities.loc[(tick,slice(None)),'close']]).droplevel(0)
         bo = dict()
-        bo['mi'] = pd.rolling_mean(merged_data, window=window)[ldt_timestamps] 
+        bo['mi'] = merged_data.rolling(window).mean()[ldt_timestamps] 
         if mi_only:
             return bo['mi']
         else:
-            sigma = pd.rolling_std(merged_data, window=window)
+            sigma = merged_data.rolling(window).std()
             bo['hi'] = bo['mi'] + k * sigma[ldt_timestamps] 
             bo['lo'] = bo['mi'] - k * sigma[ldt_timestamps] 
             bo['ba'] = (merged_data[ldt_timestamps] - bo['mi']) / (k * sigma[ldt_timestamps])

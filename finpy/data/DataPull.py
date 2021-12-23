@@ -10,7 +10,7 @@ import urllib.request, urllib.error, urllib.parse
 import datetime
 import os
 import argparse
-from finpy.data.fetch import Fetcher
+import yfinance as yf
 import re
 
 def get_data(data_path, ls_symbols, src="Yahoo"):
@@ -34,7 +34,6 @@ def get_data(data_path, ls_symbols, src="Yahoo"):
         symbol_data=list()
         dt_start = datetime.datetime(1986, 1, 1, 16)
         file = os.path.join(data_path, symbol_name + ".csv")
-        f = open (file, 'w')
         month = dt_start.month - 1
         if src == "Google":
             try:
@@ -59,7 +58,8 @@ def get_data(data_path, ls_symbols, src="Yahoo"):
                 print("URL Error for stock: {0} at {1}".format(symbol_name, url))
         elif src == "Yahoo":
             try:
-                data = Fetcher(symbol, [1986,1,1], [_now.year,_now.month,_now.day])
+                data = yf.download(symbol, start="2010-01-01", end=_now.strftime("%Y-%m-%d"))
+                data.to_csv(file) 
             except:
                 miss_ctr += 1
                 print("Unable to fetch data for stock: {0}".format(symbol_name))
@@ -68,8 +68,6 @@ def get_data(data_path, ls_symbols, src="Yahoo"):
             except:
                 miss_ctr += 1
                 print("Unable to fetch data for stock: {0}".format(symbol_name))
-            stock.to_csv(f, index=False, columns=['Date','Open','High','Low','Close','Volume','Adj Close'])
-            f.close();
                         
             
     print("All done. Got {0} stocks. Could not get {1}".format(len(ls_symbols) - miss_ctr, miss_ctr))
