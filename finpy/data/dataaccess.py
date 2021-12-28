@@ -136,8 +136,6 @@ class DataAccess(object):
                         data_update = True
                 if data_update:    
                     DataPull.get_data(dir_name, [symbol])
-                else:
-                    print("Do not pull. Use local file for " + symbol)
                 
             except IOError:
                 # If unable to read then continue. The value for this stock will be nan

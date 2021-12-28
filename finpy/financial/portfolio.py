@@ -31,13 +31,15 @@ class Portfolio():
             :var equities: is a Panel of equities.
         """ 
         if order_list == None:
-            self.order = []
+            self.order = pd.DataFrame(columns=['tick', 'date', 'action', 'shares', 'price'])
+            self.order = self.order.set_index(["tick","date"])
         else:
             ol = order_list
             ol.sort(key=lambda x: x.date)
-            self.order = ol
-            for x in [x for x in order_list if x.price == None]:
-                x.price = self.equities.loc[(x.tick, x.date),'close']
+            self.order = pd.DataFrame.from_records([s.to_dict() for s in ol])
+            self.order = self.order.set_index(["tick","date"])
+            xi = self.order[self.order["price"].isnull()].index
+            self.order.loc[xi, "price"] = self.equities.loc[xi, "close"]
         self.cash = pd.Series(index=dates)
         self.cash[0] = cash
         self.total = pd.Series(index=dates)
@@ -63,7 +65,7 @@ class Portfolio():
         self.cash[date] -= price*shares
         self.total[date] = self.dailysum(date)
         if update_ol:
-            self.order.append(Order(action="buy", date=date, tick=tick, shares=shares, price=self.equities.loc[(tick, date), 'close']))
+            self.order = self.order.append(pd.DataFrame({"action": "buy", "shares" : shares, "price": self.equities.loc[(tick, date), 'close']}, [(tick, date)]))
 
     def sell(self, shares, tick, price, date, update_ol=False):
         """
@@ -77,7 +79,7 @@ class Portfolio():
         self.cash[date] += price*shares
         self.total[date] = self.dailysum(date)
         if update_ol:
-            self.order.append(Order(action="sell", date=date, tick=tick, shares=shares, price=self.equities.loc[(tick, date), 'close']))
+            self.order = self.order.append(pd.DataFrame({"action": "sell", "shares" : shares, "price": self.equities.loc[(tick, date), 'close']}, [(tick, date)]))
 
     def fillna_cash(self, date):
         " fillna on cash up to date "
@@ -171,19 +173,8 @@ class Portfolio():
                 cw.writerow(line)
 
     def write_order_csv(self, csv_file="pf_order.csv", d=','):
-        lines = []
-        for i in self.order:
-            l = []
-            l.append(i.date.strftime("%Y-%m-%d"))
-            l.append(i.tick)
-            l.append(i.action)
-            l.append(i.shares)
-            lines.append(l)
-        with open(csv_file, 'w') as fp:
-            cw = csv.writer(fp, lineterminator='\n', delimiter=d)
-            for line in lines:
-                cw.writerow(line)
-        
+        self.order.reorder_levels(["date", "tick"]).to_csv(path_or_buf = csv_file, sep = d, header = False, columns = ["action", "shares"])
+
     def daily_return(self,tick=None):
         """
         Return the return rate of each day, a list.

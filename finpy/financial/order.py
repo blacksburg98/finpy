@@ -16,4 +16,12 @@ class Order():
         self.tick = tick 
         self.price = price
         self.date = date
+    def to_dict(self):
+        return {
+            'action' : self.action,
+            'shares' : self.shares,
+            'tick' : self.tick, 
+            'price' : self.price,
+            'date': self.date
+        }
 
