@@ -6,9 +6,6 @@ Created on April 1, 2013
 import datetime as dt
 import pandas as pd
 import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates 
 import finpy.utils.fpdateutil as du
 import finpy.data.dataaccess as da
 import finpy.utils.utils as ut
