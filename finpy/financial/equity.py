@@ -14,7 +14,7 @@ import finpy.data.dataaccess as da
 import finpy.utils.utils as ut
 from .fincommon import FinCommon
 
-def get_tickdata(ls_symbols, ldt_timestamps, fill=True, df=pd.DataFrame, source="Yahoo"):
+def get_tickdata(ls_symbols, ldt_timestamps, csv_col = [], fill=True, df=pd.DataFrame):
     """
         To get all price data of all tickers in ls_symbols within the list of ldt_timestamps
         :param ls_symbols: A list with all tickers
@@ -22,11 +22,11 @@ def get_tickdata(ls_symbols, ldt_timestamps, fill=True, df=pd.DataFrame, source=
         :param fill: Whether to fill invalid data. Default is True.
         :param source: "Yahoo" or "Google"
     """
-    c_dataobj = da.DataAccess(source, cachestalltime=0)
-    if source == "Yahoo":
+    c_dataobj = da.DataAccess("Yahoo", cachestalltime=0)
+    if csv_col:
+        ls_keys = csv_col
+    else:    
         ls_keys = ['open', 'high', 'low', 'actual_close', 'close', 'volume']
-    elif source == "Google":
-        ls_keys = ['open', 'high', 'low', 'close', 'volume']
     ldf_data = c_dataobj.get_data(ldt_timestamps, ls_symbols, ls_keys)
     d_data = dict(list(zip(ls_symbols, ldf_data)))
     if fill == True:

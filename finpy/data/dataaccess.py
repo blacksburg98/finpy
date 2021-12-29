@@ -143,8 +143,22 @@ class DataAccess(object):
                 continue;
                 
             a = pd.DataFrame(index=ts_list)
-            b = pd.read_csv(file_path, index_col='Date',parse_dates=True,na_values='null')
-            b.columns = ['open', 'high', 'low', 'actual_close', 'close', 'volume']
+            col_list = [0]
+            for i in data_item:
+                if i == "open":
+                    col_list.append(1)
+                elif i == "high":
+                    col_list.append(2)
+                elif i == "low":
+                    col_list.append(3)
+                elif i == "actual_close":
+                    col_list.append(4)
+                elif i == "close":
+                    col_list.append(5)
+                else:
+                    col_list.append(6)
+            b = pd.read_csv(file_path, index_col='Date', usecols = col_list, parse_dates=True,na_values='null')
+            b.columns = data_item
             a = pd.concat([a, b], axis=1,)
             a = a[data_item]
             ldmReturn.append(a)
