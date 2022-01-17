@@ -26,6 +26,7 @@ class Portfolio():
     """
     def __init__(self, equities, cash, dates, order_list=None):
         self.equities = pd.concat(equities, names=["tick", "date"])
+        self.equities.sort_index(inplace=True)
 #        self.equities = self.equities.reorder_levels(order=["date", "tick"])
         """
             :var equities: is a Panel of equities.

@@ -157,7 +157,7 @@ class DataAccess(object):
                     col_list.append(5)
                 else:
                     col_list.append(6)
-            b = pd.read_csv(file_path, index_col='Date', usecols = col_list, parse_dates=True,na_values='null')
+            b = pd.read_csv(file_path, index_col='Date', usecols = col_list, parse_dates=True,na_values='null', dtype = np.float32)
             b.columns = data_item
             a = pd.concat([a, b], axis=1,)
             a = a[data_item]
