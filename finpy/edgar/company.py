@@ -1,30 +1,65 @@
-import requests, json
-import os
+import asyncio
+import aiohttp
+from aiolimiter import AsyncLimiter
 import time
-from bs4 import BeautifulSoup
 from datetime import date
 import pandas as pd
 import re
+import os
+import json
+from bs4 import BeautifulSoup
+
 class company():
-    def __init__(self, ticker, name, email, debug = False):
-        self.hdr = {'User-Agent' : name + email}
-        self.debug = debug
+    def __init__(self, ticker, name, email, debug = True):
         self.ticker = ticker
+        self.hdr = self.hdr = {'User-Agent' : name + email}
+        self.debug = debug
+        
+    @classmethod
+    async def async_create(cls, ticker, concept, name, email, debug, limiter, semaphore, r):
+        self = cls(ticker, name, email, debug)
+        await self.async_get_cik(limiter, semaphore)
+        await self.async_get_cik_json(limiter, semaphore)
+        for i in concept:
+            await self.async_get_concept_json(i, limiter, semaphore)
+        r.append(self)
+        return self
+
+    async def async_download_url(self, url, limiter, semaphore):
+        s = time.perf_counter()
+        async with aiohttp.ClientSession(headers=self.hdr) as session:
+            await semaphore.acquire()
+            async with limiter:
+                if self.debug:
+                    print(f"Begin downloading {url} {(time.perf_counter() - s):0.4f} seconds")
+                async with session.get(url) as resp:
+                    content = await resp.text()
+                    if self.debug:
+                        print(f"Finished downloading {url}")
+                    semaphore.release()
+                    return content
+    
+    async def async_get_cik(self, limiter, semaphore, debug = True):
         url = 'http://www.sec.gov/cgi-bin/browse-edgar?CIK={}&Find=Search&owner=exclude&action=getcompany&count=10'
-        if self.debug:
-            print(url.format(ticker))
-        results = requests.get(url.format(ticker), headers = self.hdr)
-        tables = pd.read_html(results.text)
+        url = url.format(self.ticker)
+        print(url)
+        content = await self.async_download_url(url, limiter, semaphore)
+        tables = pd.read_html(content)
         table = tables[2]
         table = table[table['Filings'].isin(['10-K', '10-Q'])]
-        self.latest_filing_date = date.fromisoformat(table['Filing Date'][0])
+        self.latest_filing_date = date.fromisoformat(list(table['Filing Date'])[0])
         if self.debug:
+            print(self.ticker)
             print(self.latest_filing_date) 
-        match = re.search(r'CIK=\d{10}', results.text)
+        match = re.search(r'CIK=\d{10}', content)
         if match:
             self.cik = match.group().split('=')[1]
         else:
             exit("No match found.")
+        if self.debug:    
+            print(self.cik)    
+        
+    async def async_get_cik_json(self, limiter, semaphore):
         self.edgar_root = "https://www.sec.gov/"
         self.edgar_data = "Archives/edgar/data/"
         url_str = 'https://data.sec.gov/submissions/CIK{}.json'.format(self.cik)
@@ -39,34 +74,40 @@ class company():
         self.concept_dir = os.path.join(os.environ['FINPYDATA'], "edgar", "api", "xbrl", "companyconcept", 'CIK{}'.format(self.cik), "us-gaap")
         self.cik_json_file = os.path.join(os.environ['FINPYDATA'], "edgar", "submissions", self.cik + '.json')
         if self.debug:
-            print(self.cik_json_file) 
-        if not os.path.isfile(self.cik_json_file) or self.latest_filing_date < date.fromtimestamp(os.path.getmtime(self.cik_json_file)):
-            url = requests.get(url_str, headers = self.hdr)
+            print(self.cik_json_file)
+            print(self.latest_filing_date, date.fromtimestamp(os.path.getmtime(self.cik_json_file)))
+        if not os.path.isfile(self.cik_json_file) or self.latest_filing_date > date.fromtimestamp(os.path.getmtime(self.cik_json_file)):
+            content = await self.async_download_url(url_str, limiter, semaphore)
             with open(self.cik_json_file, 'w') as file:
-                file.write(url.text)
+                file.write(content)
         with open(self.cik_json_file, 'r') as file:
             self.cik_json = json.load(file)
-    def get_cik(self):
-        return self.cik
-    def get_ticker(self):
-        return self.ticker
-    def get_concept(self, concept):
+            
+    async def async_get_concept_json(self, concept, limiter, semaphore):
         xbrl_api_url = "https://data.sec.gov/api/xbrl/companyconcept/CIK{}/us-gaap/{}.json".format(self.cik, concept)
         concept_file = os.path.join(self.concept_dir, concept + ".json")
         if self.debug:
             print(xbrl_api_url)
-        if not os.path.isfile(concept_file) or self.latest_filing_date < date.fromtimestamp(os.path.getmtime(concept_file)):
-            url = requests.get(xbrl_api_url, headers = self.hdr)
+            print(concept_file)
+        if not os.path.isfile(concept_file) or self.latest_filing_date > date.fromtimestamp(os.path.getmtime(concept_file)):
+            content = await self.async_download_url(xbrl_api_url, limiter, semaphore)
             with open(concept_file, 'w') as file:
-                file.write(url.text)
+                file.write(content)
+
+    def get_cik(self):
+        return self.cik
+
+    def get_ticker(self):
+        return self.ticker
+
+    def get_concept(self, concept):
+        concept_file = os.path.join(self.concept_dir, concept + ".json")
         with open(concept_file, 'r') as file:
             concept_json = json.load(file)
         return concept_json
-    def get_concept_quaterly_df(self, concept, get_concept = True):
-        if get_concept:
-            concept_json = self.get_concept(concept)
-        else:
-            concept_json = concept
+
+    def get_concept_quaterly_df(self, concept):
+        concept_json = self.get_concept(concept)
         df = pd.DataFrame.from_records(concept_json['units']['USD'])
         df = df[df['frame'].notna()]
         df['start'] = pd.to_datetime(df.loc[:]['start'])
@@ -93,11 +134,9 @@ class company():
         qf.loc[val_nan_row, 'filed'] = list(merged[merged['_merge'] =='both'].filed)
         qf = qf.rename(columns={'val': concept})
         return qf
-    def get_concept_yearly_df(self, concept, get_concept = True):
-        if get_concept:
-            concept_json = self.get_concept(concept)
-        else:
-            concept_json = concept
+
+    def get_concept_yearly_df(self, concept):
+        concept_json = self.get_concept(concept)
         df = pd.DataFrame.from_records(concept_json['units']['USD'])
         df = df[df['frame'].notna()]
         df['start'] = pd.to_datetime(df.loc[:]['start'])
