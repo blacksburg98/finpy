@@ -7,12 +7,15 @@ import pandas as pd
 import re
 import os
 import json
+from dyplot.bar import Bar
 from bs4 import BeautifulSoup
+import xml.etree.ElementTree as ET
 
 class company():
     def __init__(self, ticker, name, email, debug = True):
         self.ticker = ticker
         self.hdr = self.hdr = {'User-Agent' : name + email}
+        self.url = ""
         self.debug = debug
         
     @classmethod
@@ -20,9 +23,8 @@ class company():
         self = cls(ticker, name, email, debug)
         await self.async_get_cik(limiter, semaphore)
         await self.async_get_cik_json(limiter, semaphore)
-        for i in concept:
-            await self.async_get_concept_json(i, limiter, semaphore)
-        r.append(self)
+        await self.async_get_fact_json(limiter, semaphore)
+        r[self.ticker] = self
         return self
 
     async def async_download_url(self, url, limiter, semaphore):
@@ -40,17 +42,29 @@ class company():
                     return content
     
     async def async_get_cik(self, limiter, semaphore, debug = True):
-        url = 'http://www.sec.gov/cgi-bin/browse-edgar?CIK={}&Find=Search&owner=exclude&action=getcompany&count=10'
-        url = url.format(self.ticker)
-        print(url)
-        content = await self.async_download_url(url, limiter, semaphore)
+        url = 'http://www.sec.gov/cgi-bin/browse-edgar?CIK={}&Find=Search&owner=exclude&action=getcompany&count=10&type=10-q'
+        self.url_10q = url.format(self.ticker)
+        print(self.url_10q)
+        content = await self.async_download_url(self.url_10q, limiter, semaphore)
         tables = pd.read_html(content)
         table = tables[2]
-        table = table[table['Filings'].isin(['10-K', '10-Q'])]
-        self.latest_filing_date = date.fromisoformat(list(table['Filing Date'])[0])
         if self.debug:
-            print(self.ticker)
-            print(self.latest_filing_date) 
+            print(self.ticker, self.url_10q)
+        self.latest_filing_date = date.fromisoformat(list(table.iloc[0])[3])
+        url = 'http://www.sec.gov/cgi-bin/browse-edgar?CIK={}&Find=Search&owner=exclude&action=getcompany&count=10&type=10-k'
+        self.url_10k = url.format(self.ticker)
+        print(self.url_10k)
+        content = await self.async_download_url(self.url_10k, limiter, semaphore)
+        tables = pd.read_html(content)
+        table = tables[2]
+        self.latest_filing_date_10k = date.fromisoformat(list(table.iloc[0])[3])
+        if self.latest_filing_date_10k > self.latest_filing_date:
+            self.latest_filing_date = self.latest_filing_date_10k 
+        if self.debug:
+            print(self.ticker, self.url_10k)
+        if self.debug:
+            print(self.ticker, "10k", self.latest_filing_date_10k) 
+            print(self.ticker, "final", self.latest_filing_date) 
         match = re.search(r'CIK=\d{10}', content)
         if match:
             self.cik = match.group().split('=')[1]
@@ -75,6 +89,7 @@ class company():
         self.cik_json_file = os.path.join(os.environ['FINPYDATA'], "edgar", "submissions", self.cik + '.json')
         if self.debug:
             print(self.cik_json_file)
+        if os.path.isfile(self.cik_json_file):
             print(self.latest_filing_date, date.fromtimestamp(os.path.getmtime(self.cik_json_file)))
         if not os.path.isfile(self.cik_json_file) or self.latest_filing_date > date.fromtimestamp(os.path.getmtime(self.cik_json_file)):
             content = await self.async_download_url(url_str, limiter, semaphore)
@@ -82,6 +97,24 @@ class company():
                 file.write(content)
         with open(self.cik_json_file, 'r') as file:
             self.cik_json = json.load(file)
+            
+    async def async_get_fact_json(self, limiter, semaphore):
+        url_str = 'https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json'.format(self.cik)
+        if self.debug:
+            print(url_str)
+        if not os.path.isdir(os.path.join(os.environ['FINPYDATA'], "edgar", "api", "xbrl", "companyfacts")):
+            os.makedirs(os.path.join(os.environ['FINPYDATA'], "edgar", "api", "xbrl", "companyfacts"));
+        self.fact_json_file = os.path.join(os.path.join(os.environ['FINPYDATA'], "edgar", "api", "xbrl", "companyfacts",'CIK{}.json'.format(self.cik)))
+        if self.debug:
+            print(self.fact_json_file)
+        if os.path.isfile(self.fact_json_file):
+            print(self.latest_filing_date, date.fromtimestamp(os.path.getmtime(self.fact_json_file)))
+        if not os.path.isfile(self.fact_json_file) or self.latest_filing_date > date.fromtimestamp(os.path.getmtime(self.fact_json_file)):
+            content = await self.async_download_url(url_str, limiter, semaphore)
+            with open(self.fact_json_file, 'w') as file:
+                file.write(content)
+        with open(self.fact_json_file, 'r') as file:
+            self.fact_json = json.load(file)
             
     async def async_get_concept_json(self, concept, limiter, semaphore):
         xbrl_api_url = "https://data.sec.gov/api/xbrl/companyconcept/CIK{}/us-gaap/{}.json".format(self.cik, concept)
@@ -93,6 +126,10 @@ class company():
             content = await self.async_download_url(xbrl_api_url, limiter, semaphore)
             with open(concept_file, 'w') as file:
                 file.write(content)
+            try:
+                json.loads(content)
+            except:
+                raise Exception("Sorry, not a json {}".format(xbrl_api_url))
 
     def get_cik(self):
         return self.cik
@@ -101,9 +138,7 @@ class company():
         return self.ticker
 
     def get_concept(self, concept):
-        concept_file = os.path.join(self.concept_dir, concept + ".json")
-        with open(concept_file, 'r') as file:
-            concept_json = json.load(file)
+        concept_json = self.fact_json['facts']['us-gaap'][concept]
         return concept_json
 
     def get_concept_quaterly_df(self, concept):
@@ -144,7 +179,24 @@ class company():
         df = df[~df['frame'].str.contains('Q')]
         df.loc[:]['frame'] = df['frame'].str[2:]
         df = df.set_index(pd.PeriodIndex(df['frame'], freq='Y'))
+        df = df.rename(columns={'val': concept})
         return df
+
+    def plot_concept_quaterly(self, concept, type = "Bar"):
+        qf = self.get_concept_quaterly_df(concept)
+        g = Bar(height=qf[concept], label=concept)
+        g.set_xticklabels(list(qf[concept].index.strftime("%YQ%q")), "categories")
+        g.option["axis"]["x"]["tick"]["rotate"] = 90 
+        return(g.savefig(html_file="c3_bar.html", width="800px", height="800px"))
+
+    def plot_concept_yearly(self, concept, type = "Bar"):
+        qf = self.get_concept_yearly_df(concept)
+        if self.debug:
+            print(qf)
+        g = Bar(height=qf[concept], label=concept)
+        g.set_xticklabels(list(qf[concept].index.strftime("%Y")), "categories")
+        g.option["axis"]["x"]["tick"]["rotate"] = 90 
+        return(g.savefig(html_file="c3_bar.html", width="800px", height="800px"))
 
     def find_form_accessionNumbers(self, form):
         """
