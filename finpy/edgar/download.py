@@ -6,9 +6,6 @@ from datetime import date
 import pandas as pd
 import re
 import os
-import json
-from dyplot.bar import Bar
-from bs4 import BeautifulSoup
 import xml.etree.ElementTree as ET
 
 class download():
