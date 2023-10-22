@@ -20,7 +20,7 @@ class company():
         cik_json = json.load(self.cik_json_file)
         self.cik = cik_json["cik"]
         self.sic = cik_json["sic"]
-        self.sicCescription = cik_json["sicDescription"]
+        self.sicDescription = cik_json["sicDescription"] 
         self.name = cik_json["name"]
         (self.latest_form, self.latest_accessionNumber, self.latest_filingDate) = self.get_latest_filing(cik_json)
         self.latest_filing_url = "https://www.sec.gov/cgi-bin/viewer?action=view&cik={}&accession_number={}&xbrl_type=v".format(self.cik, self.latest_accessionNumber)
