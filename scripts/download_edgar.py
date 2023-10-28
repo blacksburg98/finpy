@@ -5,6 +5,7 @@ from finpy.utils.components import custom
 from aiolimiter import AsyncLimiter
 import asyncio
 import time
+from datetime import date
 import argparse
 import os
 import json
@@ -33,8 +34,7 @@ async def async_get_company_ticker_json(hdr, tickers, limiter, semaphore):
                                                         sicDescription TEXT NULL,
                                                         latest_filing_date TEXT NULL,
                                                         latest_accessionNumber TEXT NULL,
-                                                        latest_form TEXT NULL,
-                                                        shares int NULL
+                                                        latest_form TEXT NULL
                                                         );''')
                 for i in company_tickers_json:
                     if company_tickers_json[i]["ticker"] in set(tickers):
@@ -46,22 +46,40 @@ async def async_get_company_ticker_json(hdr, tickers, limiter, semaphore):
             with closing(conn.cursor()) as cursor:
                 for i in company_tickers_json:
                     cursor.execute("""
-                                   INSERT OR REPLACE INTO COMPANY (ranking, cik, ticker, name) VALUES (?, ?, ?, ?)
+                                   INSERT OR IGNORE INTO COMPANY (ranking, cik, ticker, name) VALUES (?, ?, ?, ?)
                                    """, \
                                    (i, str(company_tickers_json[i]["cik_str"]).zfill(10), company_tickers_json[i]["ticker"], company_tickers_json[i]["title"]))
             conn.commit()
              
 async def main(name, email, nodownload, tickers):
-    limiter = AsyncLimiter(1, 0.25)
+    if nodownload:
+        slot = 0.001
+    else:
+        slot = 0.25
+    limiter = AsyncLimiter(1, slot)
     tasks = []
     semaphore = asyncio.Semaphore(value=10)
     hdr = {'User-Agent' : name + email}
     await async_get_company_ticker_json(hdr, tickers, limiter, semaphore)
+    company_ticker_json_db = os.path.join(os.path.join(os.environ['FINPYDATA'], "edgar", "files", "company_tickers.db"))
     r = {}
     num = 0
 
-    for i in tickers:
-        tasks.append(download.async_create(i, name, email, nodownload, True, limiter, semaphore, r))
+    for ticker in tickers:
+        with closing(sqlite3.connect(company_ticker_json_db)) as conn:
+            with closing(conn.cursor()) as cursor:
+                row = cursor.execute("SELECT * FROM COMPANY WHERE ticker = '{}'".format(ticker)).fetchone()
+                ticker_info = {}
+                ticker_info['ranking'] = row[0]
+                ticker_info['cik'] = row[1]
+                ticker_info['ticker'] = row[2]
+                ticker_info['name'] = row[3]
+                ticker_info['sic'] = row[4]
+                ticker_info['sicDescription'] = row[5]
+                ticker_info['latest_filing_date'] = date.fromisoformat(row[6])
+                ticker_info['latest_accessionNumber'] = row[7]
+                ticker_info['latest_form'] = row[8]
+                tasks.append(download.async_create(ticker_info, name, email, nodownload, True, limiter, semaphore, r))
     await asyncio.wait(tasks)
 #    for i in r:
 #        print(i)

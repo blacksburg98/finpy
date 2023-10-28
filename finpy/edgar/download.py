@@ -23,8 +23,16 @@ async def async_download_url(url, hdr, limiter, semaphore):
                 return content
     
 class download():
-    def __init__(self, ticker, name, email, debug = True):
-        self.ticker = ticker
+    def __init__(self, ticker_info, name, email, debug = True):
+        self.ranking = ticker_info['ranking']
+        self.cik = ticker_info['cik']
+        self.ticker = ticker_info['ticker']
+        self.name = ticker_info['name']
+        self.sic = ticker_info['sic']
+        self.sicDescription = ticker_info['sicDescription']
+        self.latest_filing_date = ticker_info['latest_filing_date']
+        self.latest_accessionNumber = ticker_info['latest_accessionNumber']
+        self.latest_form = ticker_info['latest_form']
         self.company_ticker_json_file = os.path.join(os.path.join(os.environ['FINPYDATA'], "edgar", "files", "company_tickers.json"))
         self.company_ticker_json_db = os.path.join(os.path.join(os.environ['FINPYDATA'], "edgar", "files", "company_tickers.db"))
         self.hdr = {'User-Agent' : name + email}
@@ -34,33 +42,17 @@ class download():
     @classmethod
     async def async_create(cls, ticker, name, email, nodownload, debug, limiter, semaphore, r):
         self = cls(ticker, name, email, debug)
-        self.get_cik(limiter, semaphore)
         if (self.latest_filing_date == None) or (date.today() > (self.latest_filing_date + datetime.timedelta(days=90))):
             await self.async_get_cik_json(nodownload, limiter, semaphore)
+        await self.async_get_fact_json(limiter, semaphore)
         with closing(sqlite3.connect(self.company_ticker_json_db)) as conn:
             with closing(conn.cursor()) as cursor:
                 cursor.execute("UPDATE COMPANY SET sic = ?, sicDescription = ?, latest_filing_date = ?,  latest_accessionNumber = ?, latest_form = ? where ticker = ?", \
                                (self.sic, self.sicDescription, self.latest_filing_date, self.latest_accessionNumber, self.latest_form , self.ticker))
             conn.commit()
-        await self.async_get_fact_json(limiter, semaphore)
         r[self.ticker] = self
         return self
 
-    def get_cik(self, limiter, semaphore, debug = True):
-        if debug:
-            print(self.ticker)
-        with closing(sqlite3.connect(self.company_ticker_json_db)) as conn:
-            with closing(conn.cursor()) as cursor:
-                rows = cursor.execute("SELECT ranking, cik, ticker, name, latest_filing_date FROM COMPANY WHERE ticker = '{}'".format(self.ticker)).fetchone()
-        try:
-            self.ranking = rows[0]
-            self.cik = rows[1]
-            self.name = rows[3]
-            self.latest_filing_date = date.fromisoformat(rows[4])
-        except:
-            print("GET_CIK ERROR", self.ticker)
-            self.latest_filing_date = None
-        
     async def async_get_cik_json(self, nodownload, limiter, semaphore):
         self.edgar_root = "https://www.sec.gov/"
         self.edgar_data = "Archives/edgar/data/"
@@ -126,5 +118,4 @@ class download():
             content = await async_download_url(url_str, self.hdr, limiter, semaphore)
             with open(self.fact_json_file, 'w') as file:
                 file.write(content)
-            
-
+            fact_json = json.loads(content)
