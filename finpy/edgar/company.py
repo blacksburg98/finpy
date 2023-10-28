@@ -5,24 +5,24 @@ import json
 from dyplot.bar import Bar
 from bs4 import BeautifulSoup
 import xml.etree.ElementTree as ET
+from contextlib import closing
+import sqlite3
 
 class company():
-    def __init__(self, ticker, debug = True):
+    def __init__(self, ticker, conn, debug = True):
         self.ticker = ticker
         self.url = ""
         self.debug = debug
-        if not os.path.isdir(os.path.join(os.environ['FINPYDATA'], "edgar", "submissions")):
-            os.makedirs(os.path.join(os.environ['FINPYDATA'], "edgar", "submissions"))
-        if not os.path.isdir(os.path.join(os.environ['FINPYDATA'], "edgar", "submissions", self.ticker)):
-            os.makedirs(os.path.join(os.environ['FINPYDATA'], "edgar", "submissions", self.ticker))
-        self.cik_json_file = open(os.path.join(os.environ['FINPYDATA'], "edgar", "submissions", self.ticker + '.json'), 'r')
-        self.fact_json_file = os.path.join(os.path.join(os.environ['FINPYDATA'], "edgar", "api", "xbrl", "companyfacts",'{}.json'.format(self.ticker)))
-        cik_json = json.load(self.cik_json_file)
-        self.cik = cik_json["cik"]
-        self.sic = cik_json["sic"]
-        self.sicDescription = cik_json["sicDescription"] 
-        self.name = cik_json["name"]
-        (self.latest_form, self.latest_accessionNumber, self.latest_filingDate) = self.get_latest_filing(cik_json)
+        with closing(conn.cursor()) as cursor:
+            row = cursor.execute("SELECT * FROM COMPANY WHERE ticker = '{}'".format(self.ticker)).fetchone()
+        self.ranking = row[0]
+        self.cik = row[1]
+        self.name = row[3]
+        self.sic = row[4]
+        self.sicDescription = row[5]
+        self.latest_filing_date = row[6]
+        self.latest_accessionNumber = row[7]
+        self.latest_form = row[8] 
         self.latest_filing_url = "https://www.sec.gov/cgi-bin/viewer?action=view&cik={}&accession_number={}&xbrl_type=v".format(self.cik, self.latest_accessionNumber)
 
     def get_cik(self):
