@@ -76,7 +76,7 @@ async def main(name, email, nodownload, tickers):
                 ticker_info['name'] = row[3]
                 ticker_info['sic'] = row[4]
                 ticker_info['sicDescription'] = row[5]
-                ticker_info['latest_filing_date'] = date.fromisoformat(row[6])
+                ticker_info['latest_filing_date'] = date.fromisoformat(row[6]) if isinstance(row[6], str) else row[6]
                 ticker_info['latest_accessionNumber'] = row[7]
                 ticker_info['latest_form'] = row[8]
                 tasks.append(download.async_create(ticker_info, name, email, nodownload, True, limiter, semaphore, r))
