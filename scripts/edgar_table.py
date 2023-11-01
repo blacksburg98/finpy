@@ -8,9 +8,10 @@ import sqlite3
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Name and Email.')
     parser.add_argument('-dir', default="app", help="app directory")
-    parser.add_argument('-subdir', default="current", help="the subdir under app directory")
     parser.add_argument('-tick', help='ticker file list')
     parser.add_argument('-sp500', action="store_true", default=False, help="include all tickers in s&p 500")
+    parser.add_argument('-header', default='{% extends "base.html" %}\n{% block content %}\n', help="header: html code before the table")
+    parser.add_argument('-footer', default="{% endblock %}", help="footer: html code before the table")
     args = parser.parse_args()
     tickers = custom(args.tick)
     r = []
@@ -33,8 +34,8 @@ if __name__ == "__main__":
         data.append(df2)
     df = pd.DataFrame(data)   
     print(df)    
-    file_name = os.path.join(args.dir, 'templates', args.subdir, 'edgar.html')
+    file_name = os.path.join(args.dir, 'edgar.html')
     with open(file_name , 'w') as f:
-        f.write('{% extends "base.html" %}\n{% block content %}\n')
-        f.write(df.to_html(escape=False,table_id="EdgarMain",index=False))    
-        f.write("{% endblock %}")
+        f.write(args.header)
+        f.write(df.sort_values(by=['Ranking']).to_html(escape=False,table_id="EdgarMain",index=False))    
+        f.write(args.footer)
