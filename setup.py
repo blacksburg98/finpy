@@ -19,7 +19,9 @@ setup(
     install_requires=[
         "NumPy >= 1.21.3",
         "pandas >= 1.3.4",
-        "dyplot >= 0.8.9"
+        "dyplot >= 0.8.9",
+        "aiohttp >=3.8.5",
+        "aiolimiter >= 1.1.0"
     ],
     classifiers = [
         "Intended Audience :: Financial and Insurance Industry",

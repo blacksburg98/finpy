@@ -7,7 +7,6 @@ import datetime
 import pandas as pd
 import re
 import os
-import xml.etree.ElementTree as ET
 import sqlite3
 import json
 from contextlib import closing
