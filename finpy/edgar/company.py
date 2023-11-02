@@ -21,9 +21,10 @@ class company():
         self.sic = row[4]
         self.sicDescription = row[5]
         self.latest_filing_date = row[6]
-        self.latest_accessionNumber = row[7]
-        self.latest_form = row[8] 
-        self.latest_filing_url = "https://www.sec.gov/cgi-bin/viewer?action=view&cik={}&accession_number={}&xbrl_type=v".format(self.cik, self.latest_accessionNumber)
+        self.latest_report_date = row[7]
+        self.latest_accessionNumber = row[8]
+        self.latest_form = row[9] 
+        self.latest_filing_url = "https://www.sec.gov/Archives/edgar/data/{}/{}/{}-{}.htm".format(self.cik, self.latest_accessionNumber.replace('-', ''), self.ticker.lower(), self.latest_report_date.replace('-', ''))
 
     def get_cik(self):
         return self.cik
@@ -93,10 +94,12 @@ class company():
         return(g.savefig(html_file="c3_bar.html", width="800px", height="800px"))
 
     def get_latest_filing(self, cik_json, forms = ["10-Q", "10-K"]):
-        accessionNumber = zip(cik_json['filings']['recent']['form'],
-                              cik_json['filings']['recent']['accessionNumber'],
-                              cik_json['filings']['recent']['filingDate'])
-        for i in accessionNumber:
+        filings_recent = zip(cik_json['filings']['recent']['form'],
+                             cik_json['filings']['recent']['accessionNumber'],
+                             cik_json['filings']['recent']['filingDate'],
+                             cik_json['filings']['recent']['reportDate']
+                            )
+        for i in filings_recent:
             if i[0] in forms:
                 return(i)
 

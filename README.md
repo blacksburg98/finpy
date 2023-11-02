@@ -1,16 +1,16 @@
 finpy
-=====
+====================
 Financial Python
-=====
+====================
 To install
-=====
+====================
 Requirement: Python 3
 
 pip install finpy
 
 You can also download the window install package if you're using windows.
 Introduction
-=====
+====================
 
 I plan to expand the capabilities. Please let me know if you have 
 any suggestions.
@@ -35,7 +35,9 @@ Recommend:
     setenv FINPYDATA ~/stock_data
 
 Tutorial 1
-=====
+====================
+::
+
     """
     Tutorial 1 
     Load stock data and print 

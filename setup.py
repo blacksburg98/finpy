@@ -2,10 +2,10 @@
 import os
 from setuptools import setup, find_packages
 __currdir__ = os.getcwd()
-__readme__ = os.path.join(__currdir__, 'README.txt')
+__readme__ = os.path.join(__currdir__, 'README.md')
 setup(
     name='FinPy',
-    version='0.5',
+    version='0.6',
     author='Tsung-Han Yang',
     author_email='blacksburg98@yahoo.com',
     packages=find_packages(),
@@ -16,6 +16,7 @@ setup(
     license='LICENSE.txt',
     description='Financial Python. Using python to do stock analysis.',
     long_description=open(__readme__).read(),
+    long_description_content_type='text/markdown',
     install_requires=[
         "NumPy >= 1.21.3",
         "pandas >= 1.3.4",

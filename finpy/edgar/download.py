@@ -46,8 +46,8 @@ class download():
         await self.async_get_fact_json(limiter, semaphore)
         with closing(sqlite3.connect(self.company_ticker_json_db)) as conn:
             with closing(conn.cursor()) as cursor:
-                cursor.execute("UPDATE COMPANY SET sic = ?, sicDescription = ?, latest_filing_date = ?,  latest_accessionNumber = ?, latest_form = ? where ticker = ?", \
-                               (self.sic, self.sicDescription, self.latest_filing_date, self.latest_accessionNumber, self.latest_form , self.ticker))
+                cursor.execute("UPDATE COMPANY SET sic = ?, sicDescription = ?, latest_filing_date = ?, latest_report_date = ?, latest_accessionNumber = ?, latest_form = ? where ticker = ?", \
+                               (self.sic, self.sicDescription, self.latest_filing_date, self.latest_report_date, self.latest_accessionNumber, self.latest_form , self.ticker))
             conn.commit()
         r[self.ticker] = self
         return self
@@ -66,21 +66,27 @@ class download():
                 file.write(content)
             cik_json = json.loads(content)
         else:
-            print(self.cik_json_file)
             with open(self.cik_json_file, 'r') as file:
-                cik_json = json.load(file)
+                try: 
+                    cik_json = json.load(file)
+                except:
+                    print("Error loading json file ", self.cik_json_file)
+                    exit()
         self.sic = cik_json["sic"]
         self.sicDescription = cik_json["sicDescription"] 
-        accessionNumber = zip(cik_json['filings']['recent']['form'],
-                              cik_json['filings']['recent']['accessionNumber'],
-                              cik_json['filings']['recent']['filingDate'])
+        filings_recent = zip(cik_json['filings']['recent']['form'],
+                             cik_json['filings']['recent']['accessionNumber'],
+                             cik_json['filings']['recent']['filingDate'],
+                             cik_json['filings']['recent']['reportDate']
+                            )
         fin_forms = { "10-Q", "10-K", "20-K", "20-F", "40-F"}
-        for i in accessionNumber:
+        for i in filings_recent:
             if i[0] in fin_forms:
                 self.latest_form = i[0]
                 self.latest_accessionNumber = i[1]
                 self.latest_filing_date = date.fromisoformat(i[2])
-                print(self.ticker, "the latest filing date of 10-Q or 10-K", self.latest_filing_date)
+                self.latest_report_date = date.fromisoformat(i[3])
+                print(self.ticker, "the latest filing and report date of 10-Q or 10-K", self.latest_filing_date, self.latest_report_date)
                 break
 
     def get_all_forms(self, form):
