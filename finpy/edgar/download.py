@@ -30,6 +30,8 @@ class download():
         self.sic = ticker_info['sic']
         self.sicDescription = ticker_info['sicDescription']
         self.latest_filing_date = ticker_info['latest_filing_date']
+        self.latest_report_date = ticker_info['latest_report_date']
+        self.latest_primaryDocument = ticker_info['latest_primaryDocument']
         self.latest_accessionNumber = ticker_info['latest_accessionNumber']
         self.latest_form = ticker_info['latest_form']
         self.company_ticker_json_file = os.path.join(os.path.join(os.environ['FINPYDATA'], "edgar", "files", "company_tickers.json"))
@@ -39,15 +41,23 @@ class download():
         self.debug = debug
         
     @classmethod
-    async def async_create(cls, ticker, name, email, nodownload, debug, limiter, semaphore, r):
-        self = cls(ticker, name, email, debug)
+    async def async_create(cls, ticker_info, name, email, nodownload, debug, limiter, semaphore, r):
+        self = cls(ticker_info, name, email, debug)
         if (self.latest_filing_date == None) or (date.today() > (self.latest_filing_date + datetime.timedelta(days=90))):
             await self.async_get_cik_json(nodownload, limiter, semaphore)
         await self.async_get_fact_json(limiter, semaphore)
         with closing(sqlite3.connect(self.company_ticker_json_db)) as conn:
             with closing(conn.cursor()) as cursor:
-                cursor.execute("UPDATE COMPANY SET sic = ?, sicDescription = ?, latest_filing_date = ?, latest_report_date = ?, latest_accessionNumber = ?, latest_form = ? where ticker = ?", \
-                               (self.sic, self.sicDescription, self.latest_filing_date, self.latest_report_date, self.latest_accessionNumber, self.latest_form , self.ticker))
+                cursor.execute("""
+                  UPDATE COMPANY SET 
+                  sic = ?, 
+                  sicDescription = ?, 
+                  latest_filing_date = ?, 
+                  latest_report_date = ?, 
+                  latest_primaryDocument = ?, 
+                  latest_accessionNumber = ?, 
+                  latest_form = ? where ticker = ?""", \
+                  (self.sic, self.sicDescription, self.latest_filing_date, self.latest_report_date, self.latest_primaryDocument, self.latest_accessionNumber, self.latest_form , self.ticker))
             conn.commit()
         r[self.ticker] = self
         return self
@@ -77,7 +87,8 @@ class download():
         filings_recent = zip(cik_json['filings']['recent']['form'],
                              cik_json['filings']['recent']['accessionNumber'],
                              cik_json['filings']['recent']['filingDate'],
-                             cik_json['filings']['recent']['reportDate']
+                             cik_json['filings']['recent']['reportDate'],
+                             cik_json['filings']['recent']['primaryDocument']
                             )
         fin_forms = { "10-Q", "10-K", "20-K", "20-F", "40-F"}
         for i in filings_recent:
@@ -86,6 +97,7 @@ class download():
                 self.latest_accessionNumber = i[1]
                 self.latest_filing_date = date.fromisoformat(i[2])
                 self.latest_report_date = date.fromisoformat(i[3])
+                self.latest_primaryDocument = i[4]
                 print(self.ticker, "the latest filing and report date of 10-Q or 10-K", self.latest_filing_date, self.latest_report_date)
                 break
 

@@ -28,7 +28,7 @@ if __name__ == "__main__":
     conn.close()    
     data = []    
     for i in r:
-        latest_str = "<a href={}>{}</a>".format(i.latest_filing_url, i.latest_form)
+        latest_str = "<a href={}>{}</a>".format(i.latest_inline_xbrl, i.latest_form)
         cik_str = "<a href=https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json>{}</a>".format(i.cik, i.cik)
         df2 = {'Ranking' : i.ranking, 'Ticker' : i.ticker, 'name' : i.name, 'cik' : cik_str, 'sic' : i.sic, 'sicDesciption' : i.sicDescription, 'latest': latest_str}
         data.append(df2)

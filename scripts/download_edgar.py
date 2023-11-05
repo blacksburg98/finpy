@@ -34,6 +34,7 @@ async def async_get_company_ticker_json(hdr, tickers, limiter, semaphore):
                                                         sicDescription TEXT NULL,
                                                         latest_filing_date TEXT NULL,
                                                         latest_report_date TEXT NULL,
+                                                        latest_primaryDocument TEXT NULL,
                                                         latest_accessionNumber TEXT NULL,
                                                         latest_form TEXT NULL
                                                         );''')
@@ -53,10 +54,7 @@ async def async_get_company_ticker_json(hdr, tickers, limiter, semaphore):
             conn.commit()
              
 async def main(name, email, nodownload, tickers):
-    if nodownload:
-        slot = 0.001
-    else:
-        slot = 0.25
+    slot = 0.25
     limiter = AsyncLimiter(1, slot)
     tasks = []
     semaphore = asyncio.Semaphore(value=10)
@@ -79,8 +77,9 @@ async def main(name, email, nodownload, tickers):
                 ticker_info['sicDescription'] = row[5]
                 ticker_info['latest_filing_date'] = date.fromisoformat(row[6]) if isinstance(row[6], str) else row[6]
                 ticker_info['latest_report_date'] = date.fromisoformat(row[7]) if isinstance(row[7], str) else row[7]
-                ticker_info['latest_accessionNumber'] = row[8]
-                ticker_info['latest_form'] = row[9]
+                ticker_info['latest_primaryDocument'] = row[8]
+                ticker_info['latest_accessionNumber'] = row[9]
+                ticker_info['latest_form'] = row[10]
                 tasks.append(download.async_create(ticker_info, name, email, nodownload, True, limiter, semaphore, r))
     await asyncio.wait(tasks)
 #    for i in r:

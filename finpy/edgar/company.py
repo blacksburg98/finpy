@@ -22,9 +22,11 @@ class company():
         self.sicDescription = row[5]
         self.latest_filing_date = row[6]
         self.latest_report_date = row[7]
-        self.latest_accessionNumber = row[8]
-        self.latest_form = row[9] 
-        self.latest_filing_url = "https://www.sec.gov/Archives/edgar/data/{}/{}/{}-{}.htm".format(self.cik, self.latest_accessionNumber.replace('-', ''), self.ticker.lower(), self.latest_report_date.replace('-', ''))
+        self.latest_primaryDocument = row[8]
+        self.latest_accessionNumber = row[9]
+        self.latest_form = row[10] 
+        self.latest_filing_url = "https://www.sec.gov/Archives/edgar/data/{}/{}/{}.htm".format(self.cik, self.latest_accessionNumber.replace('-', ''), self.latest_primaryDocument)
+        self.latest_inline_xbrl = "https://www.sec.gov/ix?doc=/Archives/edgar/data/{}/{}/{}".format(self.cik, self.latest_accessionNumber.replace('-', ''), self.latest_primaryDocument)
 
     def get_cik(self):
         return self.cik
@@ -97,7 +99,8 @@ class company():
         filings_recent = zip(cik_json['filings']['recent']['form'],
                              cik_json['filings']['recent']['accessionNumber'],
                              cik_json['filings']['recent']['filingDate'],
-                             cik_json['filings']['recent']['reportDate']
+                             cik_json['filings']['recent']['reportDate'],
+                             cik_json['filings']['recent']['primaryDocument']
                             )
         for i in filings_recent:
             if i[0] in forms:
