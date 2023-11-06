@@ -23,7 +23,6 @@ if __name__ == "__main__":
     conn = sqlite3.connect(company_ticker_json_db)
     # print(tickers, len(tickers))
     for i in tickers:
-        print(i)
         r.append(company(i, conn))
     conn.close()    
     data = []    
@@ -33,9 +32,18 @@ if __name__ == "__main__":
         df2 = {'Ranking' : i.ranking, 'Ticker' : i.ticker, 'name' : i.name, 'cik' : cik_str, 'sic' : i.sic, 'sicDesciption' : i.sicDescription, 'latest': latest_str}
         data.append(df2)
     df = pd.DataFrame(data)   
-    print(df)    
+    sics = set(df['sic'])
+    for sic in sics:
+        sic_file_name = os.path.join(args.dir, "sic_{}.html".format(sic))
+        with open(sic_file_name, 'w') as sic_f:
+            sic_f.write(args.header)
+            sic_f.write(df.loc[df['sic'] == sic].sort_values(by=['Ranking']).to_html(escape=False,table_id="EdgarMain",index=False))    
+            sic_f.write(args.footer)
+        sic_str = "<a href=sic_{}.html>{}</a>".format(sic, sic)
+        df.loc[df['sic'] == sic, 'sic'] = sic_str
     file_name = os.path.join(args.dir, 'edgar.html')
     with open(file_name , 'w') as f:
         f.write(args.header)
         f.write(df.sort_values(by=['Ranking']).to_html(escape=False,table_id="EdgarMain",index=False))    
         f.write(args.footer)
+
