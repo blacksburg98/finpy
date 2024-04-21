@@ -30,7 +30,8 @@ if __name__ == "__main__":
         latest_str = "<a href={}>{}</a>".format(i.latest_inline_xbrl, i.latest_form)
         cik_str = "<a href=https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json>{}</a>".format(i.cik, i.cik)
         tick_str = "<a href={}.html>{}</a>".format(i.ticker, i.ticker)
-        df2 = {'Ranking' : i.ranking, 'Ticker' : tick_str, 'name' : i.name, 'cik' : cik_str, 'sic' : i.sic, 'sicDesciption' : i.sicDescription, 'latest': latest_str}
+        name_str = "<a href=https://www.sec.gov/edgar/browse/?CIK={}&owner=exclude>{}</a>".format(i.cik, i.name)
+        df2 = {'Ranking' : i.ranking, 'Ticker' : tick_str, 'name' : name_str, 'cik' : cik_str, 'sic' : i.sic, 'sicDesciption' : i.sicDescription, 'latest': latest_str}
         data.append(df2)
     df = pd.DataFrame(data)   
     sics = set(df['sic'])

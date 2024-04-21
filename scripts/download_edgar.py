@@ -69,17 +69,20 @@ async def main(name, email, nodownload, tickers):
             with closing(conn.cursor()) as cursor:
                 row = cursor.execute("SELECT * FROM COMPANY WHERE ticker = '{}'".format(ticker)).fetchone()
                 ticker_info = {}
-                ticker_info['ranking'] = row[0]
-                ticker_info['cik'] = row[1]
-                ticker_info['ticker'] = row[2]
-                ticker_info['name'] = row[3]
-                ticker_info['sic'] = row[4]
-                ticker_info['sicDescription'] = row[5]
-                ticker_info['latest_filing_date'] = date.fromisoformat(row[6]) if isinstance(row[6], str) else row[6]
-                ticker_info['latest_report_date'] = date.fromisoformat(row[7]) if isinstance(row[7], str) else row[7]
-                ticker_info['latest_primaryDocument'] = row[8]
-                ticker_info['latest_accessionNumber'] = row[9]
-                ticker_info['latest_form'] = row[10]
+                try:
+                    ticker_info['ranking'] = row[0]
+                    ticker_info['cik'] = row[1]
+                    ticker_info['ticker'] = row[2]
+                    ticker_info['name'] = row[3]
+                    ticker_info['sic'] = row[4]
+                    ticker_info['sicDescription'] = row[5]
+                    ticker_info['latest_filing_date'] = date.fromisoformat(row[6]) if isinstance(row[6], str) else row[6]
+                    ticker_info['latest_report_date'] = date.fromisoformat(row[7]) if isinstance(row[7], str) else row[7]
+                    ticker_info['latest_primaryDocument'] = row[8]
+                    ticker_info['latest_accessionNumber'] = row[9]
+                    ticker_info['latest_form'] = row[10]
+                except:
+                    print("Error", ticker)
                 tasks.append(download.async_create(ticker_info, name, email, nodownload, True, limiter, semaphore, r))
     await asyncio.wait(tasks)
 #    for i in r:

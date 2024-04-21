@@ -43,6 +43,7 @@ class download():
     @classmethod
     async def async_create(cls, ticker_info, name, email, nodownload, debug, limiter, semaphore, r):
         self = cls(ticker_info, name, email, debug)
+        print(self.ticker, self.latest_filing_date)
         if (self.latest_filing_date == None) or (date.today() > (self.latest_filing_date + datetime.timedelta(days=90))):
             await self.async_get_cik_json(nodownload, limiter, semaphore)
         await self.async_get_fact_json(limiter, semaphore)
@@ -90,7 +91,7 @@ class download():
                              cik_json['filings']['recent']['reportDate'],
                              cik_json['filings']['recent']['primaryDocument']
                             )
-        fin_forms = { "10-Q", "10-K", "20-K", "20-F", "40-F"}
+        fin_forms = {"6-K", "8-K", "10-Q", "10-K", "20-K", "20-F", "40-F"}
         for i in filings_recent:
             if i[0] in fin_forms:
                 self.latest_form = i[0]
@@ -128,6 +129,7 @@ class download():
         if self.debug:
             print(self.fact_json_file)
         if os.path.isfile(self.fact_json_file):
+            print("TICKER latest_filing_date, fact_json_file_time")
             print(self.ticker, self.latest_filing_date, date.fromtimestamp(os.path.getmtime(self.fact_json_file)))
         if not os.path.isfile(self.fact_json_file) or self.latest_filing_date > date.fromtimestamp(os.path.getmtime(self.fact_json_file)):
             if self.debug:
