@@ -91,7 +91,7 @@ class download():
                              cik_json['filings']['recent']['reportDate'],
                              cik_json['filings']['recent']['primaryDocument']
                             )
-        fin_forms = {"6-K", "8-K", "10-Q", "10-K", "20-K", "20-F", "40-F"}
+        fin_forms = {"8-K", "10-Q", "10-K", "20-K", "20-F", "40-F"}
         for i in filings_recent:
             if i[0] in fin_forms:
                 self.latest_form = i[0]
