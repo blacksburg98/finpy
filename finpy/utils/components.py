@@ -4,6 +4,19 @@ def sp500():
     df = table[0]
     return list(df["Symbol"].str.replace('.', '-'))
 
+def russel3000(format = 'list'):
+    table = pd.read_csv('https://www.ishares.com/us/products/239714/ishares-russell-3000-etf/1467271812596.ajax?fileType=csv&fileName=IWV_holdings&dataType=fund', header=9, index_col=False)
+    table = table[table.Ticker.str.match('^[A-Z]*$')]
+    table = table[~table["Exchange"].str.contains("NO MARKET")]
+    table["Ticker"] = table["Ticker"].str.replace('BRKB', 'BRK-B')
+    table["Ticker"] = table["Ticker"].str.replace('^BFB$', 'BF-B')
+    table["Ticker"] = table["Ticker"].str.replace('^BFA$', 'BF-A')
+    if format == 'list':
+        return list(table["Ticker"])
+    else:
+        table.insert(0, 'Ranking', table.index)
+        return table
+
 def custom(file):
     f = open(file, "r")
     l = f.read().splitlines()

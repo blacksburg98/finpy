@@ -46,7 +46,10 @@ class download():
         print(self.ticker, self.latest_filing_date)
         if (self.latest_filing_date == None) or (date.today() > (self.latest_filing_date + datetime.timedelta(days=90))):
             await self.async_get_cik_json(nodownload, limiter, semaphore)
-        await self.async_get_fact_json(limiter, semaphore)
+        try:    
+            await self.async_get_fact_json(limiter, semaphore)
+        except:
+            print("Error getting {} fact json: ".format(self.ticker))
         with closing(sqlite3.connect(self.company_ticker_json_db)) as conn:
             with closing(conn.cursor()) as cursor:
                 cursor.execute("""
@@ -71,7 +74,7 @@ class download():
             os.makedirs(os.path.join(os.environ['FINPYDATA'], "edgar", "submissions"))
         self.cik_json_file = os.path.join(os.environ['FINPYDATA'], "edgar", "submissions", self.ticker + '.json')
         if not os.path.exists(self.cik_json_file) or (date.fromtimestamp(os.path.getmtime(self.cik_json_file)) != date.today()) or not nodownload:   
-            print(url_str)
+            print("Get cjk json of {}. URL:{}".format(self.ticker, url_str))
             content = await async_download_url(url_str, self.hdr, limiter, semaphore)
             with open(self.cik_json_file, 'w') as file:
                 file.write(content)
@@ -131,10 +134,12 @@ class download():
         if os.path.isfile(self.fact_json_file):
             print("TICKER latest_filing_date, fact_json_file_time")
             print(self.ticker, self.latest_filing_date, date.fromtimestamp(os.path.getmtime(self.fact_json_file)))
-        if not os.path.isfile(self.fact_json_file) or self.latest_filing_date > date.fromtimestamp(os.path.getmtime(self.fact_json_file)):
-            if self.debug:
-                print(url_str)
-            content = await async_download_url(url_str, self.hdr, limiter, semaphore)
-            with open(self.fact_json_file, 'w') as file:
-                file.write(content)
-            fact_json = json.loads(content)
+        try:    
+            if not os.path.isfile(self.fact_json_file) or self.latest_filing_date > date.fromtimestamp(os.path.getmtime(self.fact_json_file)):
+                if self.debug:
+                    print(url_str)
+                content = await async_download_url(url_str, self.hdr, limiter, semaphore)
+                with open(self.fact_json_file, 'w') as file:
+                    file.write(content)
+        except:
+            print("Error: {}, latest_filing_date: {}".format(self.ticker, self.latest_filing_date))

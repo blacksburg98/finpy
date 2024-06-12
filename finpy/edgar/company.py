@@ -27,6 +27,12 @@ class company():
         self.latest_form = row[10] 
         self.latest_filing_url = "https://www.sec.gov/Archives/edgar/data/{}/{}/{}.htm".format(self.cik, self.latest_accessionNumber.replace('-', ''), self.latest_primaryDocument)
         self.latest_inline_xbrl = "https://www.sec.gov/ix?doc=/Archives/edgar/data/{}/{}/{}".format(self.cik, self.latest_accessionNumber.replace('-', ''), self.latest_primaryDocument)
+        self.fact_json_file = os.path.join(os.path.join(os.environ['FINPYDATA'], "edgar", "api", "xbrl", "companyfacts",'{}.json'.format(self.ticker)))
+        try:
+            with open(self.fact_json_file, 'r') as file:
+                self.fact_json = json.load(file)
+        except:
+            print("Error loading {} json file".format(ticker))
 
     def get_cik(self):
         return self.cik
@@ -38,9 +44,9 @@ class company():
         concept_json = self.fact_json['facts']['us-gaap'][concept]
         return concept_json
 
-    def get_concept_quaterly_df(self, concept):
+    def get_concept_quaterly_df(self, concept, units='USD'):
         concept_json = self.get_concept(concept)
-        df = pd.DataFrame.from_records(concept_json['units']['USD'])
+        df = pd.DataFrame.from_records(concept_json['units'][units])
         df = df[df['frame'].notna()]
         df['start'] = pd.to_datetime(df.loc[:]['start'])
         df['end'] = pd.to_datetime(df.loc[:]['end'])
@@ -67,9 +73,9 @@ class company():
         qf = qf.rename(columns={'val': concept})
         return qf
 
-    def get_concept_yearly_df(self, concept):
+    def get_concept_yearly_df(self, concept, units='USD'):
         concept_json = self.get_concept(concept)
-        df = pd.DataFrame.from_records(concept_json['units']['USD'])
+        df = pd.DataFrame.from_records(concept_json['units'][units])
         df = df[df['frame'].notna()]
         df['start'] = pd.to_datetime(df.loc[:]['start'])
         df['end'] = pd.to_datetime(df.loc[:]['end'])

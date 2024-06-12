@@ -1,6 +1,7 @@
 from finpy.edgar.download import download
 from finpy.edgar.download import async_download_url
-from finpy.utils.components import sp500
+from finpy.utils.components import sp500 
+from finpy.utils.components import russel3000
 from finpy.utils.components import custom
 from aiolimiter import AsyncLimiter
 import asyncio
@@ -11,6 +12,8 @@ import os
 import json
 import sqlite3
 from contextlib import closing
+import logging
+logger = logging.getLogger(__name__)
 
 async def async_get_company_ticker_json(hdr, tickers, limiter, semaphore):
     url_str = 'https://www.sec.gov/files/company_tickers.json'
@@ -53,7 +56,7 @@ async def async_get_company_ticker_json(hdr, tickers, limiter, semaphore):
                                    (i, str(company_tickers_json[i]["cik_str"]).zfill(10), company_tickers_json[i]["ticker"], company_tickers_json[i]["title"]))
             conn.commit()
              
-async def main(name, email, nodownload, tickers):
+async def main(name, email, nodownload, missing_tick, tickers):
     slot = 0.25
     limiter = AsyncLimiter(1, slot)
     tasks = []
@@ -64,26 +67,28 @@ async def main(name, email, nodownload, tickers):
     r = {}
     num = 0
 
-    for ticker in tickers:
-        with closing(sqlite3.connect(company_ticker_json_db)) as conn:
-            with closing(conn.cursor()) as cursor:
-                row = cursor.execute("SELECT * FROM COMPANY WHERE ticker = '{}'".format(ticker)).fetchone()
-                ticker_info = {}
-                try:
-                    ticker_info['ranking'] = row[0]
-                    ticker_info['cik'] = row[1]
-                    ticker_info['ticker'] = row[2]
-                    ticker_info['name'] = row[3]
-                    ticker_info['sic'] = row[4]
-                    ticker_info['sicDescription'] = row[5]
-                    ticker_info['latest_filing_date'] = date.fromisoformat(row[6]) if isinstance(row[6], str) else row[6]
-                    ticker_info['latest_report_date'] = date.fromisoformat(row[7]) if isinstance(row[7], str) else row[7]
-                    ticker_info['latest_primaryDocument'] = row[8]
-                    ticker_info['latest_accessionNumber'] = row[9]
-                    ticker_info['latest_form'] = row[10]
-                except:
-                    print("Error", ticker)
-                tasks.append(download.async_create(ticker_info, name, email, nodownload, True, limiter, semaphore, r))
+    with open(missing_tick, 'w') as file:
+        for ticker in tickers:
+            with closing(sqlite3.connect(company_ticker_json_db)) as conn:
+                with closing(conn.cursor()) as cursor:
+                    row = cursor.execute("SELECT * FROM COMPANY WHERE ticker = '{}'".format(ticker)).fetchone()
+                    ticker_info = {}
+                    try:
+                        ticker_info['ranking'] = row[0]
+                        ticker_info['cik'] = row[1]
+                        ticker_info['ticker'] = row[2]
+                        ticker_info['name'] = row[3]
+                        ticker_info['sic'] = row[4]
+                        ticker_info['sicDescription'] = row[5]
+                        ticker_info['latest_filing_date'] = date.fromisoformat(row[6]) if isinstance(row[6], str) else row[6]
+                        ticker_info['latest_report_date'] = date.fromisoformat(row[7]) if isinstance(row[7], str) else row[7]
+                        ticker_info['latest_primaryDocument'] = row[8]
+                        ticker_info['latest_accessionNumber'] = row[9]
+                        ticker_info['latest_form'] = row[10]
+                        tasks.append(download.async_create(ticker_info, name, email, nodownload, True, limiter, semaphore, r))
+                    except:
+                        file.write("{}\n".format(ticker))
+                        print("Error", ticker)
     await asyncio.wait(tasks)
 #    for i in r:
 #        print(i)
@@ -96,14 +101,21 @@ if __name__ == "__main__":
     parser.add_argument('-email', help='E-Mail address')
     parser.add_argument('-tick', help='ticker file list')
     parser.add_argument('-sp500', action="store_true", default=False, help="include all tickers in s&p 500")
+    parser.add_argument('-russel3000', action="store_true", default=False, help="include all tickers in russel 3000")
     parser.add_argument('-nodownload', action="store_true", default=False, help="only update the database from the exisiting json files")
+    parser.add_argument('-dir', default="app", help="app directory")
     args = parser.parse_args()
     tickers = custom(args.tick)
     if args.sp500:
-        tickers += sp500();
-        tickers = list(set(tickers))
+        sp500 = sp500()
+        tickers += sp500
+    if args.russel3000:
+        r3k = russel3000(format="list")
+        tickers += r3k
+    tickers = list(set(tickers))
+    missing_tick = os.path.join(args.dir, "missing.txt")
     s = time.perf_counter()
-    asyncio.run(main(args.name, args.email, args.nodownload,  tickers)) # Activate this line if the code is to be executed in VS Code
+    asyncio.run(main(args.name, args.email, args.nodownload, missing_tick,  tickers)) # Activate this line if the code is to be executed in VS Code
     # , etc. Otherwise deactivate it.
     # r = await main()          # Activate this line if the code is to be executed in Jupyter 
     # Notebook! Otherwise deactivate it.
