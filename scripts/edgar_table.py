@@ -25,7 +25,7 @@ if __name__ == "__main__":
         missing_file = os.path.join(args.dir, "missing.txt");
         r3k_missing = custom(missing_file)
         r3k = russel3000(format="pandas")
-        r3k = r3k.drop(columns=['Notional Value', 'Asset Class', 'Location','Exchange','Currency','FX Rate','Market Currency','Accrual Date'])
+        r3k = r3k.drop(columns=['Notional Value', 'Asset Class', 'Location','Exchange','Currency','FX Rate','Market Currency','Accrual Date', 'Market Value', 'Shares'])
         r3k = r3k[~r3k['Ticker'].isin(r3k_missing)]
         tickers += list(r3k['Ticker'])
         r3k.insert(2, 'CJK', "")
@@ -47,8 +47,10 @@ if __name__ == "__main__":
         tick_str = "<a href={}.html>{}</a>".format(i.ticker, i.ticker)
         name_str = "<a href=https://www.sec.gov/edgar/browse/?CIK={}&owner=exclude>{}</a>".format(i.cik, i.name)
         r3k.loc[r3k.Ticker == i.ticker, 'CJK'] = cik_str 
+        tick_file = os.path.join(args.dir, "{}.html".format(i.ticker))
         r3k.loc[r3k.Ticker == i.ticker, 'Name'] = name_str 
-        r3k.loc[r3k.Ticker == i.ticker, 'Ticker'] = tick_str 
+        if os.path.isfile(tick_file):
+            r3k.loc[r3k.Ticker == i.ticker, 'Ticker'] = tick_str 
         df2 = {'Ranking' : i.ranking, 'Ticker' : tick_str, 'name' : name_str, 'cik' : cik_str, 'sic' : i.sic, 'sicDesciption' : i.sicDescription, 'latest': latest_str}
         data.append(df2)
     df = pd.DataFrame(data)   
