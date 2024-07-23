@@ -7,6 +7,8 @@ from bs4 import BeautifulSoup
 import xml.etree.ElementTree as ET
 from contextlib import closing
 import sqlite3
+import logging
+logger = logging.getLogger(__name__)
 
 class company():
     def __init__(self, ticker, conn, debug = True):
@@ -40,12 +42,15 @@ class company():
     def get_ticker(self):
         return self.ticker
 
-    def get_concept(self, concept):
-        concept_json = self.fact_json['facts']['us-gaap'][concept]
+    def get_concept(self, concept, accounting='us-gaap'):
+        try:
+            concept_json = self.fact_json['facts'][accounting][concept]
+        except:
+            raise ValueError("concept {} does not exists for {}".format(concept, self.ticker))
         return concept_json
 
-    def get_concept_quaterly_df(self, concept, units='USD'):
-        concept_json = self.get_concept(concept)
+    def get_concept_quaterly_df(self, concept, accounting='us-gaap', units='USD'):
+        concept_json = self.get_concept(concept, accounting)
         df = pd.DataFrame.from_records(concept_json['units'][units])
         df = df[df['frame'].notna()]
         df['start'] = pd.to_datetime(df.loc[:]['start'])
@@ -73,10 +78,16 @@ class company():
         qf = qf.rename(columns={'val': concept})
         return qf
 
-    def get_concept_yearly_df(self, concept, units='USD'):
-        concept_json = self.get_concept(concept)
-        df = pd.DataFrame.from_records(concept_json['units'][units])
-        df = df[df['frame'].notna()]
+    def get_concept_yearly_df(self, concept, accounting='us-gaap', units='USD'):
+        concept_json = self.get_concept(concept, accounting)
+        try:
+            df = pd.DataFrame.from_records(concept_json['units'][units])
+        except:    
+            raise ValueError("unit does not exists in concept {} for {}".format(concept, self.ticker))
+        try:
+            df = df[df['frame'].notna()]
+        except:    
+            raise ValueError("frame does not exists in concept {} for {}".format(concept, self.ticker))
         df['start'] = pd.to_datetime(df.loc[:]['start'])
         df['end'] = pd.to_datetime(df.loc[:]['end'])
         df = df[~df['frame'].str.contains('Q')]
@@ -85,21 +96,77 @@ class company():
         df = df.rename(columns={'val': concept})
         return df
 
-    def plot_concept_quaterly(self, concept, type = "Bar"):
-        qf = self.get_concept_quaterly_df(concept)
+    def plot_concept_quaterly(self, concept, accounting='us-gaap', type = "Bar"):
+        qf = self.get_concept_quaterly_df(concept, accounting)
         g = Bar(height=qf[concept], label=concept)
         g.set_xticklabels(list(qf[concept].index.strftime("%YQ%q")), "categories")
         g.option["axis"]["x"]["tick"]["rotate"] = 90 
         return(g.savefig(html_file="c3_bar.html", width="800px", height="800px"))
 
-    def plot_concept_yearly(self, concept, type = "Bar"):
-        qf = self.get_concept_yearly_df(concept)
+    def plot_concept_yearly(self, concept, accounting='us-gaap', type = "Bar"):
+        qf = self.get_concept_yearly_df(concept, accounting)
         if self.debug:
             print(qf)
         g = Bar(height=qf[concept], label=concept)
         g.set_xticklabels(list(qf[concept].index.strftime("%Y")), "categories")
         g.option["axis"]["x"]["tick"]["rotate"] = 90 
         return(g.savefig(html_file="c3_bar.html", width="800px", height="800px"))
+
+    def get_concepts(self, concept, duplicated_list=[], accounting='us-gaap'):
+        """
+        The argument of concept should be in the following example format.
+        concept = [{"name" : "NetIncomeLoss", "units" : 'USD'},
+                    {"name" : "ProfitLoss", "units" : 'USD'},
+                    {"name" : "RevenueFromContractWithCustomerExcludingAssessedTax", "units" : 'USD'},
+                    {"name" : "Revenues", "units" : 'USD'}
+                  ]
+        duplicated_list = [
+                     "Net Income": ["NetIncomeLoss", "ProfitLoss"],
+                     "Revenues" : ["RevenueFromContractWithCustomerExcludingAssessedTax", "Revenues"]
+                   ] 
+        """
+        concepts = {}
+        for i in concept:
+            try:
+                df = self.get_concept_yearly_df(i['name'], accounting, i['units'])
+            except ValueError as e:    
+                logger.error(e.args)
+                continue
+            df = df.iloc[:, 0:3]
+            concepts[i['name']] = df
+        if duplicated_list:
+            concepts = self.remove_duplicated_concepts(concepts, duplicated_list)
+        return concepts 
+
+    def remove_duplicated_concepts(self, concepts, duplicated_list=[]):
+        """
+            concepts should be from the function of get_concepts.
+            It is a dictionary of dataframes. The keys of the dictionary are the concepts of edgar. The dataframes has the facts 
+            of these concepts.
+            The following is an example of duplicated lists.
+            duplicated_list = [ 
+              ["NetIncomeLoss", "ProfitLoss"],
+              ["RevenueFromContractWithCustomerExcludingAssessedTax", "Revenues"]
+            ]
+            For example, it checks the latest date of NetIncomeLoss and ProfitIncomeLoss from the duplicated list.
+            It removes the keys with an earlier date and renames the key. 
+        """
+        for l in duplicated_list:
+            dl = []
+            for i in l:
+                if (i in concepts) and (not concepts[i].empty):
+                    dl.append(i)
+            if not dl:        
+                logger.error("All items in {} do not exist in {}.".format(l, self.ticker))
+            if len(dl) > 1:
+                p = dl[0]
+                for i in range(1, len(dl)):
+                    if ((concepts[dl[i]]['end'][-1] > concepts[p]['end'][-1]) or ((concepts[dl[i]]['end'][-1] == concepts[p]['end'][-1]) and (concepts[dl[i]]['end'][0] < concepts[p]['end'][0]))):
+                        del concepts[p]
+                        p = i
+                    else:
+                        del concepts[dl[i]]
+        return concepts
 
     def get_latest_filing(self, cik_json, forms = ["10-Q", "10-K"]):
         filings_recent = zip(cik_json['filings']['recent']['form'],
