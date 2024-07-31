@@ -115,7 +115,7 @@ class company():
         g.option["axis"]["x"]["tick"]["rotate"] = 90 
         return(g.savefig(html_file="c3_bar.html", width="800px", height="800px"))
 
-    def get_concepts(self, concept, duplicated_list=[], accounting='us-gaap'):
+    def get_concepts(self, concept, duplicated_list=[], accounting='us-gaap', drop_columns=["accn", "fy", "fp", "frame", "timedelta"]):
         """
         The argument of concept should be in the following example format.
         concept = [{"name" : "NetIncomeLoss", "units" : 'USD'},
@@ -135,7 +135,7 @@ class company():
             except ValueError as e:    
                 logger.error(e.args)
                 continue
-            df = df.iloc[:, 0:3]
+            df = df.drop(columns=drop_columns)
             concepts[i['name']] = df
         if duplicated_list:
             concepts = self.remove_duplicated_concepts(concepts, duplicated_list)
