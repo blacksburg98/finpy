@@ -34,6 +34,7 @@ def get_data(data_path, ls_symbols, src="Yahoo"):
         symbol_data=list()
         dt_start = datetime.datetime(1986, 1, 1, 16)
         file = os.path.join(data_path, symbol_name + ".csv")
+        actions_file = os.path.join(data_path, symbol_name + "_actions" + ".csv")
         month = dt_start.month - 1
         if src == "Google":
             try:
@@ -58,8 +59,10 @@ def get_data(data_path, ls_symbols, src="Yahoo"):
                 print("URL Error for stock: {0} at {1}".format(symbol_name, url))
         elif src == "Yahoo":
             try:
-                data = yf.download(symbol, start="2010-01-01", end=_now.strftime("%Y-%m-%d"))
-                data.to_csv(file) 
+                data = yf.download(symbol, start="2006-01-01", end=_now.strftime("%Y-%m-%d"))
+                data.to_csv(file)
+                actions = yf.Ticker(symbol).actions
+                actions.to_csv(actions_file)
             except:
                 miss_ctr += 1
                 print("Unable to fetch data for stock: {0}".format(symbol_name))
