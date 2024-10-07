@@ -108,7 +108,7 @@ class DataAccess(object):
 
         #__init__ ends
 
-    def get_data_hardread(self, ts_list, symbol_list, data_item, verbose=False):
+    def get_data_hardread(self, ts_list, symbol_list, data_item, verbose=False, actions=True):
         '''
         Read data into a DataFrame no matter what.
         @param ts_list: List of timestamps for which the data values are needed. Timestamps must be sorted.
@@ -161,13 +161,22 @@ class DataAccess(object):
             b.columns = data_item
             a = pd.concat([a, b], axis=1,)
             a = a[data_item]
+            if actions:
+                file_path = os.path.join(self.rootdir, "Yahoo",  symbol + "_actions.csv")
+                c = pd.read_csv(file_path, index_col='Date', parse_dates=True ,na_values='null', dtype = np.float32)
+                a = a.join(c)
+                a = a.fillna(0)
+                a_reversed = a[::-1]
+                a_reversed['Stock Splits'] = a_reversed['Stock Splits'].replace(0, 1)
+                a_reversed['Stock Splits'] = a_reversed['Stock Splits'].cumprod()
+                a['Stock Splits'] = a_reversed['Stock Splits'][::-1]
             ldmReturn.append(a)
                 
         return ldmReturn            
         
         #get_data_hardread ends
 
-    def get_data (self, ts_list, symbol_list, data_item, verbose=False, bIncDelist=False):
+    def get_data (self, ts_list, symbol_list, data_item, verbose=False, bIncDelist=False, actions=True):
         '''
         Read data into a DataFrame, but check to see if it is in a cache first.
         @param ts_list: List of timestamps for which the data values are needed. Timestamps must be sorted.
@@ -177,7 +186,7 @@ class DataAccess(object):
         @note: If a symbol is not found then a message is printed. All the values in the column for that stock will be NaN. Execution then 
         continues as usual. No errors are raised at the moment.
         '''
-        retval = self.get_data_hardread(ts_list, symbol_list, data_item, verbose)
+        retval = self.get_data_hardread(ts_list, symbol_list, data_item, verbose, actions)
         return retval
 
     def getPathOfFile(self, symbol_name, bDelisted=False):
