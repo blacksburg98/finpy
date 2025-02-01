@@ -44,7 +44,7 @@ if __name__ == "__main__":
     for i in r:
         latest_str = "<a href={}>{}</a>".format(i.latest_inline_xbrl, i.latest_form)
         cik_str = "<a href=https://data.sec.gov/api/xbrl/companyfacts/CIK{}.json>{}</a>".format(i.cik, i.cik)
-        tick_str = "<a href={}.html>{}</a>".format(i.ticker, i.ticker)
+        tick_str = "<a href={}_edgar.html>{}</a>".format(i.ticker, i.ticker)
         name_str = "<a href=https://www.sec.gov/edgar/browse/?CIK={}&owner=exclude>{}</a>".format(i.cik, i.name)
         r3k.loc[r3k.Ticker == i.ticker, 'CJK'] = cik_str 
         tick_file = os.path.join(args.dir, "{}.html".format(i.ticker))
